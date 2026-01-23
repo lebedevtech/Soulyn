@@ -4,7 +4,6 @@ import { motion } from 'framer-motion';
 import { MessageCircle, Search, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
-import clsx from 'clsx';
 
 const listContainerVariants = {
   hidden: { opacity: 0 },
@@ -63,18 +62,17 @@ export default function ChatPage() {
 
   return (
     <div className="relative w-full h-full bg-black flex flex-col">
-      {/* === HEADER (CENTERED) === */}
-      <div className="absolute top-0 left-0 right-0 h-[52px] z-20 flex items-center justify-center bg-black/80 backdrop-blur-md border-b border-white/5">
+      {/* === HEADER (FIXED SAFE AREA) === */}
+      {/* Сместили вниз на top-12 (безопасная зона) */}
+      <div className="absolute top-12 left-0 right-0 h-[52px] z-20 flex items-center justify-center bg-black/80 backdrop-blur-md border-b border-white/5">
         <span className="text-[17px] font-bold text-white tracking-tight">Чаты</span>
-        
-        {/* Кнопка поиска справа (опционально) */}
         <button className="absolute right-4 p-2 text-white/50 hover:text-white transition-colors">
           <Search size={20} />
         </button>
       </div>
 
-      {/* Контент с отступом под Header (pt-[60px]) */}
-      <div className="flex-1 overflow-y-auto no-scrollbar pt-[60px] pb-32 px-4">
+      {/* Контент: отступ pt-28 (top-12 + высота хедера) */}
+      <div className="flex-1 overflow-y-auto no-scrollbar pt-28 pb-32 px-4">
         {chats.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-center">
             <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-4 text-white/20">

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Bell, Heart, UserPlus, Star } from 'lucide-react';
-import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import clsx from 'clsx';
 
@@ -29,7 +28,6 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
-    // Mock data for demo
     setNotifications([
       { id: 1, type: 'match', text: 'У вас новый мэтч с Анной!', time: '2м назад', read: false },
       { id: 2, type: 'like', text: 'Ваш импульс понравился 3 людям', time: '15м назад', read: true },
@@ -47,12 +45,12 @@ export default function NotificationsPage() {
 
   return (
     <div className="relative w-full h-full bg-black flex flex-col">
-      {/* === HEADER (CENTERED) === */}
-      <div className="absolute top-0 left-0 right-0 h-[52px] z-20 flex items-center justify-center bg-black/80 backdrop-blur-md border-b border-white/5">
+      {/* HEADER (SAFE AREA FIX) */}
+      <div className="absolute top-12 left-0 right-0 h-[52px] z-20 flex items-center justify-center bg-black/80 backdrop-blur-md border-b border-white/5">
         <span className="text-[17px] font-bold text-white tracking-tight">Уведомления</span>
       </div>
 
-      <div className="flex-1 overflow-y-auto no-scrollbar pt-[60px] pb-32 px-4">
+      <div className="flex-1 overflow-y-auto no-scrollbar pt-28 pb-32 px-4">
         <motion.div 
           className="space-y-2 transform-gpu"
           variants={listContainerVariants}
@@ -68,20 +66,13 @@ export default function NotificationsPage() {
                 notif.read ? "bg-white/5 border-white/5" : "bg-white/10 border-white/10"
               )}
             >
-              <div className={clsx(
-                "w-10 h-10 rounded-full flex items-center justify-center shrink-0",
-                notif.read ? "bg-white/5" : "bg-primary/20"
-              )}>
+              <div className={clsx("w-10 h-10 rounded-full flex items-center justify-center shrink-0", notif.read ? "bg-white/5" : "bg-primary/20")}>
                 {getIcon(notif.type)}
               </div>
-              
               <div className="flex-1">
-                <p className={clsx("text-sm leading-tight", notif.read ? "text-white/60" : "text-white font-bold")}>
-                  {notif.text}
-                </p>
+                <p className={clsx("text-sm leading-tight", notif.read ? "text-white/60" : "text-white font-bold")}>{notif.text}</p>
                 <p className="text-[10px] text-white/30 font-bold uppercase mt-1.5">{notif.time}</p>
               </div>
-
               {!notif.read && <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_10px_rgba(139,92,246,0.5)]" />}
             </motion.div>
           ))}
