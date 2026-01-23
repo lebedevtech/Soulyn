@@ -5,39 +5,34 @@ import MapView from '../features/map/MapView';
 import ImpulseSheet from '../features/map/ImpulseSheet';
 import VenueSheet from '../features/map/VenueSheet';
 import { 
-  LayoutGrid, 
-  Map as MapIcon, 
-  Users, 
-  Building2, 
-  Navigation,
-  Coffee, 
-  Pizza, 
-  Film, 
-  Star, 
-  MapPin
+  LayoutGrid, Map as MapIcon, Users, Building2, Navigation, 
+  Coffee, Pizza, Film, Star, MapPin 
 } from 'lucide-react';
 import { useLocation } from '../context/LocationContext';
 import clsx from 'clsx';
 
-// КОНФИГУРАЦИЯ АНИМАЦИЙ (PREMIUM FEEL)
+// ОБНОВЛЕННАЯ АНИМАЦИЯ (БЕЗ ДЕРГАНИЙ)
 const containerVariants = {
   hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.08, // Задержка между появлением элементов
-      delayChildren: 0.1
-    }
+  visible: { 
+    opacity: 1, 
+    transition: { 
+      staggerChildren: 0.06, // Чуть быстрее каскад
+      delayChildren: 0.05 
+    } 
   }
 };
 
 const itemVariants = {
-  hidden: { y: 20, opacity: 0, scale: 0.95 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    scale: 1,
-    transition: { type: "spring", stiffness: 300, damping: 24 }
+  hidden: { y: 20, opacity: 0 }, // Убрали scale, чтобы не мылило текст и не дергало
+  visible: { 
+    y: 0, 
+    opacity: 1, 
+    transition: { 
+      // Используем кривую Безье (как в iOS) вместо пружины
+      duration: 0.4,
+      ease: [0.25, 0.1, 0.25, 1.0] 
+    } 
   }
 };
 
@@ -50,22 +45,10 @@ const CATEGORIES = [
 
 const MapToggle = ({ mode, setMode }) => (
   <div className="flex flex-col gap-3 pointer-events-auto">
-    <button
-      onClick={() => setMode('social')}
-      className={clsx(
-        "w-12 h-12 rounded-2xl flex items-center justify-center backdrop-blur-xl border transition-all duration-300 shadow-xl active:scale-90",
-        mode === 'social' ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.3)]" : "bg-black/40 text-white/50 border-white/10"
-      )}
-    >
+    <button onClick={() => setMode('social')} className={clsx("w-12 h-12 rounded-2xl flex items-center justify-center backdrop-blur-xl border transition-all duration-300 shadow-xl active:scale-90", mode === 'social' ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.3)]" : "bg-black/40 text-white/50 border-white/10")}>
       <Users size={20} />
     </button>
-    <button
-      onClick={() => setMode('places')}
-      className={clsx(
-        "w-12 h-12 rounded-2xl flex items-center justify-center backdrop-blur-xl border transition-all duration-300 shadow-xl active:scale-90",
-        mode === 'places' ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.3)]" : "bg-black/40 text-white/50 border-white/10"
-      )}
-    >
+    <button onClick={() => setMode('places')} className={clsx("w-12 h-12 rounded-2xl flex items-center justify-center backdrop-blur-xl border transition-all duration-300 shadow-xl active:scale-90", mode === 'places' ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.3)]" : "bg-black/40 text-white/50 border-white/10")}>
       <Building2 size={20} />
     </button>
   </div>
@@ -81,19 +64,28 @@ export default function MapPage({ onOpenCreate }) {
   const [impulses, setImpulses] = useState([]);
   const [venues, setVenues] = useState([]);
   
-  const { location: userLocation } = useLocation();
+  const locationContext = useLocation();
+  const userLocation = locationContext?.location || null;
+  
   const [followUser, setFollowUser] = useState(true);
 
   useEffect(() => {
-    // ОПТИМИЗАЦИЯ: Параллельная загрузка
     const fetchData = async () => {
-      const [impRes, venueRes] = await Promise.all([
-        supabase.from('impulses').select(`*, users (*), venues (name)`).eq('is_active', true).order('created_at', { ascending: false }),
-        supabase.from('venues').select('*')
-      ]);
-      
-      if (impRes.data) setImpulses(impRes.data);
-      if (venueRes.data) setVenues(venueRes.data);
+      try {
+        const impPromise = supabase
+          .from('impulses')
+          .select(`*, users (*), venues (name)`)
+          .order('created_at', { ascending: false });
+
+        const venuePromise = supabase.from('venues').select('*');
+
+        const [impRes, venueRes] = await Promise.all([impPromise, venuePromise]);
+        
+        if (impRes.data) setImpulses(impRes.data);
+        if (venueRes.data) setVenues(venueRes.data);
+      } catch (e) {
+        console.error('Критическая ошибка загрузки:', e);
+      }
     };
 
     fetchData();
@@ -170,7 +162,7 @@ export default function MapPage({ onOpenCreate }) {
         </button>
       </div>
 
-      {/* 5. LIST VIEW (АНИМИРОВАННЫЙ) */}
+      {/* 5. LIST VIEW */}
       <AnimatePresence>
         {viewMode === 'list' && (
           <div className="absolute inset-0 z-10">
@@ -185,19 +177,12 @@ export default function MapPage({ onOpenCreate }) {
               className="w-full h-full bg-black/60 overflow-y-auto no-scrollbar pt-32 pb-48 px-6 relative z-10"
             >
               {mapLayer === 'places' ? (
-                // --- СПИСОК МЕСТ (STAGGERED) ---
-                <motion.section 
-                  variants={containerVariants}
-                  initial="hidden"
-                  animate="visible"
-                >
+                <motion.section variants={containerVariants} initial="hidden" animate="visible">
                    <motion.h3 variants={itemVariants} className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] mb-6 ml-1">Лучшие места</motion.h3>
                    <div className="space-y-4">
                      {venues.map(venue => (
                        <motion.button 
-                         key={venue.id} 
-                         variants={itemVariants}
-                         onClick={() => setSelectedVenue(venue)}
+                         key={venue.id} variants={itemVariants} onClick={() => setSelectedVenue(venue)}
                          className="w-full glass-panel p-4 rounded-[24px] flex gap-4 active:scale-[0.98] transition-transform text-left"
                        >
                          <img src={venue.image_url} className="w-20 h-20 rounded-xl object-cover shadow-lg" alt={venue.name} />
@@ -211,12 +196,7 @@ export default function MapPage({ onOpenCreate }) {
                    </div>
                 </motion.section>
               ) : (
-                // --- СПИСОК ИМПУЛЬСОВ (STAGGERED) ---
-                <motion.div
-                  variants={containerVariants}
-                  initial="hidden"
-                  animate="visible"
-                >
+                <motion.div variants={containerVariants} initial="hidden" animate="visible">
                   <motion.section variants={itemVariants} className="mb-10">
                     <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mb-5 ml-1">Категории</h3>
                     <div className="grid grid-cols-2 gap-3">
@@ -242,13 +222,8 @@ export default function MapPage({ onOpenCreate }) {
                         const user = imp.users || { first_name: 'Ghost' };
                         return (
                           <motion.button 
-                            key={imp.id} 
-                            variants={itemVariants}
-                            onClick={() => setSelectedImpulse(imp)}
-                            className={clsx(
-                              "w-full glass-panel p-4 rounded-[30px] flex items-center gap-4 active:scale-[0.98] transition-all text-left",
-                              user.is_premium && "border-yellow-500/30 shadow-[0_0_15px_rgba(234,179,8,0.1)]"
-                            )}
+                            key={imp.id} variants={itemVariants} onClick={() => setSelectedImpulse(imp)}
+                            className={clsx("w-full glass-panel p-4 rounded-[30px] flex items-center gap-4 active:scale-[0.98] transition-all text-left", user.is_premium && "border-yellow-500/30 shadow-[0_0_15px_rgba(234,179,8,0.1)]")}
                           >
                             <div className="w-14 h-14 rounded-full border-2 border-primary/20 p-0.5 shrink-0 relative">
                               <img src={user.avatar_url || 'https://i.pravatar.cc/150'} className="w-full h-full rounded-full object-cover" alt="" />
@@ -260,11 +235,7 @@ export default function MapPage({ onOpenCreate }) {
                                 <span className="text-[10px] font-black text-primary uppercase">~500м</span>
                               </div>
                               <p className="text-white/60 text-sm line-clamp-1 font-medium">{imp.message}</p>
-                              {imp.venues && (
-                                <div className="flex items-center gap-1 text-[10px] text-white/30 font-black uppercase mt-1">
-                                  <MapPin size={10} className="text-primary" /> {imp.venues.name}
-                                </div>
-                              )}
+                              {imp.venues && <div className="flex items-center gap-1 text-[10px] text-white/30 font-black uppercase mt-1"><MapPin size={10} className="text-primary" /> {imp.venues.name}</div>}
                             </div>
                           </motion.button>
                         );
@@ -279,15 +250,7 @@ export default function MapPage({ onOpenCreate }) {
       </AnimatePresence>
 
       <ImpulseSheet impulse={selectedImpulse} onClose={() => setSelectedImpulse(null)} />
-      
-      <VenueSheet 
-        venue={selectedVenue} 
-        onClose={() => setSelectedVenue(null)}
-        onCreateImpulse={(venue) => {
-          setSelectedVenue(null);
-          onOpenCreate({ venue, location: userLocation }); 
-        }} 
-      />
+      <VenueSheet venue={selectedVenue} onClose={() => setSelectedVenue(null)} onCreateImpulse={(venue) => { setSelectedVenue(null); onOpenCreate({ venue, location: userLocation }); }} />
     </div>
   );
 }

@@ -19,12 +19,11 @@ function MapController({ userLocation, followUser }) {
 
   useEffect(() => {
     if (followUser && userLocation) {
-      // ИСПОЛЬЗУЕМ flyTo ДЛЯ ПЛАВНОСТИ
       map.flyTo(userLocation, 15, {
         animate: true,
-        duration: 0.8, // Чуть меньше секунды (быстро, но плавно)
-        easeLinearity: 0.25, // Делает траекторию более "изогнутой" и мягкой
-        noMoveStart: true // Важно: предотвращает конфликт событий
+        duration: 0.8,
+        easeLinearity: 0.25,
+        noMoveStart: true
       });
     }
   }, [userLocation, followUser, map]);
@@ -97,49 +96,52 @@ export default function MapView({
   };
 
   return (
-    <MapContainer 
-      center={defaultCenter} 
-      zoom={14} 
-      className="w-full h-full z-0 bg-[#050505]"
-      zoomControl={false}
-    >
-      <MapController 
-        userLocation={userLocation} 
-        followUser={followUser}
-      />
-      
-      <UserInteractionHandler onInteraction={onUserInteraction} />
-
-      <TileLayer
-        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-        attribution='&copy; CARTO'
-        maxZoom={20}
-      />
-
-      {userLocation && (
-        <Marker position={userLocation} icon={myLocationIcon} zIndexOffset={1000} />
-      )}
-
-      {mode === 'social' && impulses.map((imp) => {
-        if (!imp.users) return null;
-        return (
-          <Marker 
-            key={imp.id} 
-            position={[imp.lat, imp.lng]} 
-            icon={createSocialIcon(imp.users.avatar_url, imp.users.is_premium)}
-            eventHandlers={{ click: () => { onUserInteraction && onUserInteraction(); onImpulseClick(imp); } }}
-          />
-        );
-      })}
-
-      {mode === 'places' && venues.map((venue) => (
-        <Marker 
-          key={venue.id} 
-          position={[venue.lat, venue.lng]} 
-          icon={createVenueIcon(venue.image_url, venue.is_partner)}
-          eventHandlers={{ click: () => { onUserInteraction && onUserInteraction(); onVenueClick(venue); } }}
+    // Убрал z-0 и добавил bg-black для гарантии
+    <div className="w-full h-full bg-black">
+      <MapContainer 
+        center={defaultCenter} 
+        zoom={14} 
+        className="w-full h-full bg-black" // Черный фон контейнера
+        zoomControl={false}
+        attributionControl={false} // ОТКЛЮЧЕНИЕ КОПИРАЙТА
+      >
+        <MapController 
+          userLocation={userLocation} 
+          followUser={followUser}
         />
-      ))}
-    </MapContainer>
+        
+        <UserInteractionHandler onInteraction={onUserInteraction} />
+
+        <TileLayer
+          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          maxZoom={20}
+        />
+
+        {userLocation && (
+          <Marker position={userLocation} icon={myLocationIcon} zIndexOffset={1000} />
+        )}
+
+        {mode === 'social' && impulses.map((imp) => {
+          if (!imp.users) return null;
+          return (
+            <Marker 
+              key={imp.id} 
+              position={[imp.lat, imp.lng]} 
+              icon={createSocialIcon(imp.users.avatar_url, imp.users.is_premium)}
+              eventHandlers={{ click: () => { onUserInteraction && onUserInteraction(); onImpulseClick(imp); } }}
+            />
+          );
+        })}
+
+        {mode === 'places' && venues.map((venue) => (
+          <Marker 
+            key={venue.id} 
+            position={[venue.lat, venue.lng]} 
+            icon={createVenueIcon(venue.image_url, venue.is_partner)}
+            eventHandlers={{ click: () => { onUserInteraction && onUserInteraction(); onVenueClick(venue); } }}
+          />
+        ))}
+      </MapContainer>
+    </div>
   );
 }

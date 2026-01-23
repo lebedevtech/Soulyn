@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  /* Переносим цвета из твоего конфига */
+  /* Цвета */
   --color-background: #0F0F11;
   --color-surface: #1C1C1E;
   --color-primary: #8B5CF6;
@@ -56,6 +56,17 @@
 .active-press:active {
   transform: scale(0.96);
   transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* LEAFLET CUSTOMIZATION (FIXES) */
+/* 1. Черный фон при загрузке тайлов */
+.leaflet-container {
+  background-color: #000000 !important;
+}
+
+/* 2. Скрываем копирайт */
+.leaflet-control-attribution {
+  display: none !important;
 }
 
 /* Глобальные сбросы */
