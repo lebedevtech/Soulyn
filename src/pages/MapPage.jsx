@@ -26,8 +26,8 @@ const cardVariants = {
   hidden: { 
     y: 20, 
     opacity: 0, 
-    scale: 0.96 
-    // БЕЗ BLUR (Чистая анимация без артефактов)
+    // УБРАЛИ SCALE: 0.96 -> 1 (Это вызывало сбой backdrop-filter и серое мерцание)
+    scale: 1 
   },
   visible: { 
     y: 0, 
@@ -143,7 +143,6 @@ export default function MapPage({ onOpenCreate }) {
             <div className="w-full h-full overflow-y-auto no-scrollbar pt-32 pb-48 px-6 relative z-10">
               {mapLayer === 'places' ? (
                 // === СПИСОК МЕСТ ===
-                // УБРАЛ will-change-transform (Фикс мерцания фона)
                 <motion.div 
                   key="places-list"
                   className="space-y-4"
@@ -156,6 +155,10 @@ export default function MapPage({ onOpenCreate }) {
                    {venues.map(venue => (
                      <motion.button 
                        key={venue.id} 
+                       // FORCE ANIMATION (FIX STATIC CARDS)
+                       initial="hidden"
+                       whileInView="visible"
+                       viewport={{ once: true }}
                        variants={cardVariants}
                        whileTap="tap"
                        onClick={() => setSelectedVenue(venue)} 
@@ -172,7 +175,6 @@ export default function MapPage({ onOpenCreate }) {
                 </motion.div>
               ) : (
                 // === СПИСОК ИМПУЛЬСОВ ===
-                // УБРАЛ will-change-transform
                 <motion.div 
                   key="impulses-list"
                   className="space-y-4"
