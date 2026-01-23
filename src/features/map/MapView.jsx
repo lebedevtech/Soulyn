@@ -1,58 +1,109 @@
-import React, { useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { useEffect } from 'react';
+import clsx from 'clsx';
 
-// Принудительный ресайз для исключения артефактов при загрузке
-function FixMapSize() {
+// Компонент для обновления центра карты при смене координат
+function ChangeView({ center }) {
   const map = useMap();
   useEffect(() => {
-    setTimeout(() => { map.invalidateSize(); }, 500);
-  }, [map]);
+    map.setView(center, map.getZoom());
+  }, [center, map]);
   return null;
 }
 
-export default function MapView({ impulses = [], onImpulseClick }) {
-  // Тот самый дизайн маркера: фото + неон + пульс
-  const createCustomIcon = (imp) => {
+export default function MapView({ 
+  impulses = [], 
+  venues = [], 
+  mode = 'social', // 'social' или 'places'
+  onImpulseClick, 
+  onVenueClick 
+}) {
+  const defaultCenter = [55.7558, 37.6173]; // Москва
+
+  // Генератор иконок для ЛЮДЕЙ (Круглые)
+  const createSocialIcon = (url, isPremium) => {
     return L.divIcon({
-      className: 'custom-impulse-marker',
+      className: 'custom-marker',
       html: `
-        <div class="relative flex items-center justify-center">
-          <div class="absolute inset-0 w-12 h-12 bg-primary/30 rounded-full blur-md animate-pulse"></div>
-          <div class="relative w-10 h-10 rounded-full border-2 border-white overflow-hidden shadow-[0_0_15px_rgba(139,92,246,0.5)] z-10">
-            <img src="${imp.img}" class="w-full h-full object-cover" />
+        <div class="relative w-12 h-12">
+          <div class="${clsx(
+            "w-full h-full rounded-full border-2 overflow-hidden shadow-lg bg-black",
+            isPremium ? "border-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.6)]" : "border-primary"
+          )}">
+            <img src="${url}" class="w-full h-full object-cover" />
           </div>
-          <div class="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full border-2 border-black flex items-center justify-center z-20 shadow-lg">
-            <div class="w-1.5 h-1.5 bg-white rounded-full"></div>
-          </div>
+          ${isPremium ? '<div class="absolute -top-1 -right-1 bg-yellow-400 rounded-full w-3 h-3 border border-black"></div>' : ''}
         </div>
       `,
       iconSize: [48, 48],
-      iconAnchor: [24, 24]
+      iconAnchor: [24, 24],
+    });
+  };
+
+  // Генератор иконок для ЗАВЕДЕНИЙ (Квадратные с логотипом)
+  const createVenueIcon = (url, isPartner) => {
+    return L.divIcon({
+      className: 'custom-marker',
+      html: `
+        <div class="relative w-14 h-14">
+          <div class="${clsx(
+            "w-full h-full rounded-2xl border-2 overflow-hidden shadow-2xl bg-black",
+            isPartner ? "border-white shadow-[0_0_20px_rgba(255,255,255,0.4)]" : "border-white/20"
+          )}">
+            <img src="${url}" class="w-full h-full object-cover" />
+          </div>
+          <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-black/80 px-2 py-0.5 rounded-full border border-white/10">
+            <span class="text-[8px] font-black text-white uppercase tracking-wider block">Place</span>
+          </div>
+        </div>
+      `,
+      iconSize: [56, 56],
+      iconAnchor: [28, 28],
     });
   };
 
   return (
-    <div className="w-full h-full bg-black">
-      <MapContainer 
-        center={[55.7532, 37.6225]} 
-        zoom={14} 
-        zoomControl={false}
-        attributionControl={false} /* УБРАЛИ НАЗВАНИЕ ПРОВАЙДЕРА */
-        className="w-full h-full"
-      >
-        <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
-        <FixMapSize />
-        
-        {impulses.map((imp) => (
+    <MapContainer 
+      center={defaultCenter} 
+      zoom={14} 
+      className="w-full h-full z-0 bg-[#050505]" // Темный фон пока не загрузится плитка
+      zoomControl={false}
+    >
+      <ChangeView center={defaultCenter} />
+      
+      {/* ТЕМНАЯ КАРТА (CartoDB DarkMatter) */}
+      <TileLayer
+        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+        subdomains='abcd'
+        maxZoom={20}
+      />
+
+      {/* СЛОЙ SOCIAL (Люди) */}
+      {mode === 'social' && impulses.map((imp) => {
+        if (!imp.users) return null;
+        return (
           <Marker 
             key={imp.id} 
             position={[imp.lat, imp.lng]} 
-            icon={createCustomIcon(imp)}
+            icon={createSocialIcon(imp.users.avatar_url, imp.users.is_premium)}
             eventHandlers={{ click: () => onImpulseClick(imp) }}
           />
-        ))}
-      </MapContainer>
-    </div>
+        );
+      })}
+
+      {/* СЛОЙ PLACES (Заведения) */}
+      {mode === 'places' && venues.map((venue) => (
+        <Marker 
+          key={venue.id} 
+          position={[venue.lat, venue.lng]} 
+          icon={createVenueIcon(venue.image_url, venue.is_partner)}
+          eventHandlers={{ click: () => onVenueClick(venue) }}
+        />
+      ))}
+
+    </MapContainer>
   );
 }
