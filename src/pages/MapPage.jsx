@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import MapView from '../features/map/MapView';
 import ImpulseSheet from '../features/map/ImpulseSheet';
-import { LayoutGrid, Map as MapIcon, Coffee, Pizza, Film, Dumbbell, MapPin, ChevronRight, Star } from 'lucide-react';
+import { LayoutGrid, Map as MapIcon, Coffee, Pizza, Film, Star, MapPin, ChevronRight } from 'lucide-react';
 import clsx from 'clsx';
 
 const CATEGORIES = [
@@ -16,12 +16,9 @@ const CATEGORIES = [
 export default function MapPage() {
   const [viewMode, setViewMode] = useState('map');
   const [selectedImpulse, setSelectedImpulse] = useState(null);
-  
-  // Состояние для хранения импульсов с сервера
   const [impulses, setImpulses] = useState([]);
 
   useEffect(() => {
-    // 1. Загрузка существующих импульсов
     const fetchImpulses = async () => {
       const { data, error } = await supabase
         .from('impulses')
@@ -33,7 +30,6 @@ export default function MapPage() {
 
     fetchImpulses();
 
-    // 2. Подписка на новые импульсы (Realtime)
     const channel = supabase
       .channel('public:impulses')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'impulses' }, (payload) => {
@@ -57,12 +53,16 @@ export default function MapPage() {
       <AnimatePresence>
         {viewMode === 'list' && (
           <div className="absolute inset-0 z-10">
-            <div className="absolute top-0 left-0 right-0 h-32 z-20 pointer-events-none bg-gradient-to-b from-black via-black/80 to-transparent backdrop-blur-md" />
+            {/* ВЕРХНИЙ БАРЬЕР (Увеличили высоту градиента до h-48 из-за сдвига шапки) */}
+            <div className="absolute top-0 left-0 right-0 h-48 z-20 pointer-events-none bg-gradient-to-b from-black via-black/80 to-transparent backdrop-blur-md" />
+            
+            {/* НИЖНИЙ БАРЬЕР */}
             <div className="absolute bottom-0 left-0 right-0 h-48 z-20 pointer-events-none bg-gradient-to-t from-black via-black/95 to-transparent" />
 
+            {/* КОНТЕНТ (Увеличили отступ pt-32 -> pt-44, чтобы не наезжал на новую шапку) */}
             <motion.div 
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="w-full h-full bg-black/60 backdrop-blur-2xl overflow-y-auto no-scrollbar pt-32 pb-48 px-6 relative z-10"
+              className="w-full h-full bg-black/60 backdrop-blur-2xl overflow-y-auto no-scrollbar pt-44 pb-48 px-6 relative z-10"
             >
               <section className="mb-10">
                 <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mb-5 ml-1">Категории</h3>
@@ -125,8 +125,8 @@ export default function MapPage() {
         )}
       </AnimatePresence>
 
-      {/* HEADER */}
-      <div className="absolute top-0 left-0 right-0 z-30 pt-14 px-6 flex items-center justify-between pointer-events-none">
+      {/* HEADER (Сдвинули вниз: pt-14 -> pt-24) */}
+      <div className="absolute top-0 left-0 right-0 z-30 pt-24 px-6 flex items-center justify-between pointer-events-none">
         <div className="flex flex-col">
           <h1 className="text-3xl font-black text-white tracking-tighter drop-shadow-2xl leading-none">Soulyn</h1>
           <div className="flex items-center gap-1.5 mt-2">
