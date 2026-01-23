@@ -12,11 +12,10 @@ import clsx from 'clsx';
 
 const SHEET_TRANSITION = { duration: 0.5, ease: [0.22, 1, 0.36, 1] };
 
-// Анимация только по вертикали для эффекта "всплытия"
 const STEP_VARIANTS = {
-  enter: { y: 40, opacity: 0 },
+  enter: { y: 30, opacity: 0 },
   center: { y: 0, opacity: 1 },
-  exit: { y: -20, opacity: 0 },
+  exit: { y: -10, opacity: 0 },
 };
 
 const VIBES = [
@@ -28,6 +27,7 @@ const VIBES = [
 
 const TIME_SLOTS = ["Сейчас", "30 мин", "1 час", "Вечер"];
 
+// Добавлен проп onShowMoreVenues для перехода в список мест
 export default function CreateImpulseSheet({ isOpen, initialData, onClose, onShowMoreVenues }) {
   const { user } = useAuth();
   const { location: gpsLocation } = useLocation();
@@ -76,7 +76,6 @@ export default function CreateImpulseSheet({ isOpen, initialData, onClose, onSho
   };
 
   const handleCreate = async () => {
-    if (!user) return;
     setIsSending(true);
     const lat = selectedVenue?.lat || gpsLocation?.[0] || 55.7558;
     const lng = selectedVenue?.lng || gpsLocation?.[1] || 37.6173;
@@ -110,11 +109,14 @@ export default function CreateImpulseSheet({ isOpen, initialData, onClose, onSho
             className="fixed bottom-0 left-0 right-0 z-[110] bg-[#0A0A0A] rounded-t-[48px] border-t border-white/5 p-6 pb-12 shadow-2xl overflow-hidden"
           >
             <div className="absolute top-0 left-0 right-0 h-1 bg-white/5">
-              <motion.div className="h-full bg-primary" animate={{ width: `${(step / 5) * 100}%` }} />
+              <motion.div 
+                className="h-full bg-primary"
+                animate={{ width: `${(step / 5) * 100}%` }}
+              />
             </div>
 
-            {/* HEADER NAVIGATION */}
-            <div className="flex justify-between items-center mb-8 px-2">
+            {/* HEADER NAVIGATION: Текст выровнен с кнопками */}
+            <div className="flex justify-between items-center mb-10">
               <div className="w-10">
                 {step > 1 && (
                   <button onClick={prevStep} className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 text-white/40 active:scale-90 transition-transform">
@@ -122,27 +124,31 @@ export default function CreateImpulseSheet({ isOpen, initialData, onClose, onSho
                   </button>
                 )}
               </div>
+              
               <span className="text-[13px] font-bold text-white uppercase tracking-[0.2em] -translate-y-0.5">
                 {getStepTitle()}
               </span>
+
               <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 text-white/40 active:scale-90 transition-transform">
                 <X size={20} />
               </button>
             </div>
 
-            <div className="relative min-h-[380px]">
+            <div className="relative min-h-[360px]">
               <AnimatePresence mode="wait">
+                
                 {step === 1 && (
                   <motion.div key="step1" variants={STEP_VARIANTS} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }}>
                     <div className="relative mb-6">
                       <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={18} />
                       <input 
                         placeholder="Найти заведение..."
-                        className="w-full h-12 bg-white/[0.03] border border-white/10 rounded-2xl pl-12 pr-4 text-white text-sm focus:outline-none focus:border-primary/40 transition-all"
+                        className="w-full h-12 bg-white/[0.03] border border-white/10 rounded-2xl pl-12 pr-4 text-white placeholder:text-white/20 focus:outline-none focus:border-primary/40 transition-all text-sm"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                       />
                     </div>
+
                     <div className="space-y-2">
                       <h3 className="text-[9px] font-black text-white/20 uppercase tracking-widest mb-3 ml-1">Популярные места</h3>
                       {popularVenues.map(venue => (
@@ -155,7 +161,15 @@ export default function CreateImpulseSheet({ isOpen, initialData, onClose, onSho
                           <ChevronRight size={16} className="text-white/10" />
                         </button>
                       ))}
-                      <button onClick={() => { onShowMoreVenues(); onClose(); }} className="w-full p-4 mt-2 rounded-[20px] border border-dashed border-white/10 bg-white/[0.02] text-white/40 text-[11px] font-bold uppercase tracking-widest active:scale-[0.98] transition-all">
+                      
+                      {/* НОВАЯ КНОПКА: Больше популярных мест */}
+                      <button 
+                        onClick={() => {
+                          onShowMoreVenues(); // Триггер на переключение режима в MapPage
+                          onClose();          // Закрываем шторку
+                        }} 
+                        className="w-full p-4 mt-2 rounded-[20px] border border-dashed border-white/10 bg-white/[0.02] text-white/40 text-[11px] font-bold uppercase tracking-widest hover:text-white hover:border-white/20 transition-all active:scale-[0.98]"
+                      >
                         Больше популярных мест
                       </button>
                     </div>
@@ -172,6 +186,7 @@ export default function CreateImpulseSheet({ isOpen, initialData, onClose, onSho
                         </button>
                       ))}
                     </div>
+
                     <div className="space-y-2">
                       <h3 className="text-[9px] font-black text-white/20 uppercase tracking-widest mb-3 ml-1">Когда планируете?</h3>
                       <div className="p-1 bg-white/[0.03] rounded-2xl border border-white/5 flex gap-1">
@@ -182,6 +197,7 @@ export default function CreateImpulseSheet({ isOpen, initialData, onClose, onSho
                         ))}
                       </div>
                     </div>
+                    
                     <button onClick={nextStep} className="w-full mt-10 py-4 rounded-2xl bg-white text-black font-black text-[11px] uppercase tracking-widest active:scale-95 transition-transform">Далее</button>
                   </motion.div>
                 )}
@@ -189,10 +205,13 @@ export default function CreateImpulseSheet({ isOpen, initialData, onClose, onSho
                 {step === 3 && (
                   <motion.div key="step3" variants={STEP_VARIANTS} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }}>
                     <textarea 
-                      autoFocus value={message} onChange={(e) => setMessage(e.target.value)}
+                      autoFocus
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
                       placeholder="Опишите ваши планы на эту встречу..."
-                      className="w-full h-44 bg-white/[0.03] border border-white/10 rounded-[28px] p-6 text-white text-base font-medium focus:outline-none focus:border-primary/40 transition-all resize-none shadow-inner"
+                      className="w-full h-40 bg-white/[0.03] border border-white/10 rounded-[28px] p-6 text-white text-base font-medium focus:outline-none focus:border-primary/40 transition-all resize-none shadow-inner"
                     />
+                    
                     <button onClick={nextStep} disabled={!message.trim()} className="w-full mt-6 py-4 rounded-2xl bg-white text-black font-black text-[11px] uppercase tracking-widest disabled:opacity-20 transition-all">Подтвердить</button>
                   </motion.div>
                 )}
@@ -214,6 +233,7 @@ export default function CreateImpulseSheet({ isOpen, initialData, onClose, onSho
                         </button>
                       ))}
                     </div>
+                    
                     <button onClick={nextStep} className="w-full mt-10 py-4 rounded-2xl bg-white text-black font-black text-[11px] uppercase tracking-widest active:scale-95 transition-transform">К просмотру</button>
                   </motion.div>
                 )}
@@ -230,19 +250,27 @@ export default function CreateImpulseSheet({ isOpen, initialData, onClose, onSho
                           <MapPin size={12} className="text-primary" /> {selectedVenue?.name || "Моя геопозиция"}
                        </div>
                     </div>
+
                     <div className="flex gap-2 mb-8">
                        <button onClick={() => setIsGhost(!isGhost)} className={clsx("flex-1 p-3 rounded-2xl border flex items-center justify-center gap-2 transition-all", isGhost ? "bg-white text-black border-white" : "bg-white/[0.03] border-white/10 text-white/40")}>
-                          <Ghost size={16} /><span className="text-[9px] font-bold uppercase tracking-widest">Ghost</span>
+                          <Ghost size={16} />
+                          <span className="text-[9px] font-bold uppercase tracking-widest">Ghost</span>
                        </button>
                        <div className="flex-1 p-3 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-center gap-2 text-white/40">
-                          <Clock size={16} /><span className="text-[9px] font-bold uppercase tracking-widest">4 Часа</span>
+                          <Clock size={16} />
+                          <span className="text-[9px] font-bold uppercase tracking-widest">4 Часа</span>
                        </div>
                     </div>
-                    <motion.button whileTap={{ scale: 0.98 }} onClick={handleCreate} disabled={isSending} className="w-full py-5 rounded-[24px] bg-primary text-white font-black text-lg flex items-center justify-center gap-2 shadow-2xl shadow-primary/40">
+
+                    <motion.button 
+                      whileTap={{ scale: 0.98 }} onClick={handleCreate} disabled={isSending}
+                      className="w-full py-5 rounded-[24px] bg-primary text-white font-black text-lg flex items-center justify-center gap-2 shadow-2xl shadow-primary/40"
+                    >
                       {isSending ? 'Публикация...' : <>Опубликовать <Send size={20} /></>}
                     </motion.button>
                   </motion.div>
                 )}
+
               </AnimatePresence>
             </div>
           </motion.div>
