@@ -6,7 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useLocation } from '../../context/LocationContext';
 import clsx from 'clsx';
 
-// PREMIUM SHEET PHYSICS (Идентично VenueSheet)
+// ТОЧНАЯ КОПИЯ ФИЗИКИ VENUE SHEET
 const SHEET_TRANSITION = { duration: 0.4, ease: [0.25, 1, 0.5, 1] };
 
 export default function CreateImpulseSheet({ isOpen, initialData, onClose }) {
@@ -41,20 +41,22 @@ export default function CreateImpulseSheet({ isOpen, initialData, onClose }) {
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
+          {/* BACKDROP: FIXED (на весь экран, поверх меню) */}
           <motion.div 
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 z-40 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm"
           />
           
-          {/* SLIDE UP SHEET (Как в VenueSheet) */}
+          {/* SHEET: FIXED BOTTOM (выезжает поверх меню) */}
           <motion.div 
             initial={{ y: "100%" }} 
             animate={{ y: 0 }} 
             exit={{ y: "100%" }}
             transition={SHEET_TRANSITION}
-            className="absolute bottom-0 left-0 right-0 z-50 bg-[#121212] rounded-t-[32px] border-t border-white/10 p-6 pb-12 shadow-2xl"
+            className="fixed bottom-0 left-0 right-0 z-[70] bg-[#121212] rounded-t-[32px] border-t border-white/10 p-6 pb-12 shadow-2xl"
           >
              {/* Drag Handle */}
              <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-6" />
@@ -76,7 +78,6 @@ export default function CreateImpulseSheet({ isOpen, initialData, onClose }) {
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder={targetVenue ? `Кого позовем в ${targetVenue.name}, ${user?.first_name}?` : `Что делаем, ${user?.first_name}?`}
-                // Убрали autoFocus
                 className="w-full h-32 bg-white/5 border border-white/10 rounded-3xl p-5 text-white placeholder:text-white/20 resize-none focus:outline-none focus:border-white/20 text-lg font-medium transition-colors"
               />
               
