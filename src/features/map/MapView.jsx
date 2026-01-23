@@ -1,24 +1,22 @@
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { useEffect, useState } from 'react';
-import { Navigation } from 'lucide-react';
+import { useEffect } from 'react';
 import clsx from 'clsx';
 
-// Компонент для управления камерой
+// Умный контроллер камеры
 function MapController({ center, userLocation, followUser }) {
   const map = useMap();
 
   useEffect(() => {
-    // Если включен режим слежения и есть координаты юзера - летим к нему
     if (followUser && userLocation) {
-      map.flyTo(userLocation, 15, { duration: 2 });
-    } 
-    // Иначе просто центрируем (например при старте)
-    else if (center) {
-      map.setView(center, map.getZoom());
+      // Если включено слежение - плавно летим к юзеру
+      map.flyTo(userLocation, 15, {
+        animate: true,
+        duration: 1.5
+      });
     }
-  }, [center, userLocation, followUser, map]);
+  }, [userLocation, followUser, map]); // Реагируем на изменение позиции или флага слежения
 
   return null;
 }
@@ -27,14 +25,15 @@ export default function MapView({
   impulses = [], 
   venues = [], 
   mode = 'social', 
-  userLocation, // НОВЫЙ ПРОПС: Координаты юзера [lat, lng]
+  userLocation, 
+  followUser, // Принимаем состояние слежения сверху
   onImpulseClick, 
-  onVenueClick 
+  onVenueClick,
+  onUserInteraction // Новый коллбек: когда юзер двигает карту сам
 }) {
-  const defaultCenter = [55.7558, 37.6173]; // Москва (фолбек)
-  const [followUser, setFollowUser] = useState(true); // Следить ли за юзером при старте
+  const defaultCenter = [55.7558, 37.6173];
 
-  // Иконка "Я" (Пульсирующая точка)
+  // Иконка "Я"
   const myLocationIcon = L.divIcon({
     className: 'my-location-marker',
     html: `
@@ -47,7 +46,6 @@ export default function MapView({
     iconAnchor: [12, 12],
   });
 
-  // Иконка для ЛЮДЕЙ
   const createSocialIcon = (url, isPremium) => {
     return L.divIcon({
       className: 'custom-marker',
@@ -67,7 +65,6 @@ export default function MapView({
     });
   };
 
-  // Иконка для ЗАВЕДЕНИЙ
   const createVenueIcon = (url, isPartner) => {
     return L.divIcon({
       className: 'custom-marker',
@@ -90,65 +87,52 @@ export default function MapView({
   };
 
   return (
-    <div className="relative w-full h-full">
-      <MapContainer 
+    <MapContainer 
+      center={defaultCenter} 
+      zoom={14} 
+      className="w-full h-full z-0 bg-[#050505]"
+      zoomControl={false}
+    >
+      <MapController 
         center={defaultCenter} 
-        zoom={14} 
-        className="w-full h-full z-0 bg-[#050505]"
-        zoomControl={false}
-      >
-        <MapController 
-          center={defaultCenter} 
-          userLocation={userLocation} 
-          followUser={followUser}
-        />
-        
-        <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-          attribution='&copy; CARTO'
-          maxZoom={20}
-        />
+        userLocation={userLocation} 
+        followUser={followUser}
+      />
+      
+      {/* События карты: если юзер начал двигать карту, отключаем слежение */}
+      <TileLayer
+        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+        attribution='&copy; CARTO'
+        maxZoom={20}
+        eventHandlers={{
+          dragstart: () => onUserInteraction && onUserInteraction()
+        }}
+      />
 
-        {/* Маркер пользователя (Я) */}
-        {userLocation && (
-          <Marker position={userLocation} icon={myLocationIcon} zIndexOffset={1000} />
-        )}
+      {userLocation && (
+        <Marker position={userLocation} icon={myLocationIcon} zIndexOffset={1000} />
+      )}
 
-        {/* СЛОЙ SOCIAL */}
-        {mode === 'social' && impulses.map((imp) => {
-          if (!imp.users) return null;
-          return (
-            <Marker 
-              key={imp.id} 
-              position={[imp.lat, imp.lng]} 
-              icon={createSocialIcon(imp.users.avatar_url, imp.users.is_premium)}
-              eventHandlers={{ click: () => { setFollowUser(false); onImpulseClick(imp); } }}
-            />
-          );
-        })}
-
-        {/* СЛОЙ PLACES */}
-        {mode === 'places' && venues.map((venue) => (
+      {mode === 'social' && impulses.map((imp) => {
+        if (!imp.users) return null;
+        return (
           <Marker 
-            key={venue.id} 
-            position={[venue.lat, venue.lng]} 
-            icon={createVenueIcon(venue.image_url, venue.is_partner)}
-            eventHandlers={{ click: () => { setFollowUser(false); onVenueClick(venue); } }}
+            key={imp.id} 
+            position={[imp.lat, imp.lng]} 
+            icon={createSocialIcon(imp.users.avatar_url, imp.users.is_premium)}
+            eventHandlers={{ click: () => { onUserInteraction(); onImpulseClick(imp); } }}
           />
-        ))}
+        );
+      })}
 
-      </MapContainer>
-
-      {/* КНОПКА "ГДЕ Я" (Плавающая) */}
-      <button 
-        onClick={() => setFollowUser(true)}
-        className={clsx(
-          "absolute top-44 right-4 z-[400] p-3 rounded-2xl backdrop-blur-xl border transition-all shadow-xl active:scale-90",
-          followUser ? "bg-blue-500 text-white border-blue-400" : "bg-black/40 text-white/50 border-white/10"
-        )}
-      >
-        <Navigation size={20} fill={followUser ? "currentColor" : "none"} />
-      </button>
-    </div>
+      {mode === 'places' && venues.map((venue) => (
+        <Marker 
+          key={venue.id} 
+          position={[venue.lat, venue.lng]} 
+          icon={createVenueIcon(venue.image_url, venue.is_partner)}
+          eventHandlers={{ click: () => { onUserInteraction(); onVenueClick(venue); } }}
+        />
+      ))}
+    </MapContainer>
   );
 }

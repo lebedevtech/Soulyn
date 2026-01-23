@@ -11,11 +11,12 @@ import {
   Building2,
   Star,
   MapPin,
-  ChevronRight
+  ChevronRight,
+  Navigation
 } from 'lucide-react';
 import clsx from 'clsx';
 
-// ПЕРЕКЛЮЧАТЕЛЬ
+// Переключатель слева (Social/Places)
 const MapToggle = ({ mode, setMode }) => (
   <div className="flex flex-col gap-3 pointer-events-auto">
     <button
@@ -49,8 +50,9 @@ export default function MapPage({ onOpenCreate }) {
   const [impulses, setImpulses] = useState([]);
   const [venues, setVenues] = useState([]);
   
-  // Состояние для координат пользователя
+  // GPS Состояния
   const [userLocation, setUserLocation] = useState(null);
+  const [followUser, setFollowUser] = useState(true); // По умолчанию следим за юзером
 
   useEffect(() => {
     const fetchData = async () => {
@@ -66,18 +68,17 @@ export default function MapPage({ onOpenCreate }) {
 
     fetchData();
 
-    // ЗАПРОС GPS
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
+      // Используем watchPosition вместо getCurrentPosition для постоянного обновления
+      const watchId = navigator.geolocation.watchPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
           setUserLocation([latitude, longitude]);
         },
-        (error) => {
-          console.error("Ошибка GPS:", error);
-          // Можно поставить дефолт, но лучше оставить null, карта сама встанет на Москву
-        }
+        (error) => console.error("GPS Error:", error),
+        { enableHighAccuracy: true }
       );
+      return () => navigator.geolocation.clearWatch(watchId);
     }
 
     const channel = supabase
@@ -98,53 +99,66 @@ export default function MapPage({ onOpenCreate }) {
   return (
     <div className="relative w-full h-full bg-black overflow-hidden">
       
-      {/* 1. ЛОГОТИП */}
+      {/* 1. ЛОГОТИП (Чистый верх) */}
       <div className="absolute top-14 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center pointer-events-none">
         <h1 className="text-xl font-black text-white tracking-tighter drop-shadow-2xl leading-none">Soulyn</h1>
         <div className="flex items-center gap-1.5 mt-1">
-          <span className="w-1 h-1 bg-primary rounded-full animate-pulse shadow-[0_0_10px_rgba(139,92,246,1)]" />
+          <span className={clsx("w-1 h-1 rounded-full animate-pulse shadow-[0_0_10px_rgba(139,92,246,1)]", userLocation ? "bg-blue-500" : "bg-primary")} />
           <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-white/50">
             {userLocation ? 'GPS ACTIVE' : 'Москва'}
           </span>
         </div>
       </div>
 
-      {/* 2. ПЕРЕКЛЮЧАТЕЛЬ СЛОЕВ */}
+      {/* 2. ЛЕВЫЙ НИЖНИЙ: Переключатель слоев */}
       <div className="absolute bottom-32 left-4 z-30">
         <MapToggle mode={mapLayer} setMode={setMapLayer} />
       </div>
 
-      {/* 3. КАРТА (Передаем userLocation) */}
+      {/* 3. КАРТА */}
       <div className="absolute inset-0 z-0">
         <MapView 
           impulses={impulses} 
           venues={venues} 
           mode={mapLayer}
-          userLocation={userLocation} // <-- Передали координаты
+          userLocation={userLocation}
+          followUser={followUser} // Передаем флаг слежения
+          onUserInteraction={() => setFollowUser(false)} // Если юзер трогает карту - отключаем слежение
           onImpulseClick={setSelectedImpulse} 
           onVenueClick={(venue) => setSelectedVenue(venue)} 
         />
       </div>
 
-      {/* 4. КНОПКИ ВИДА */}
+      {/* 4. ПРАВЫЙ НИЖНИЙ: Инструменты (Группа) */}
       <div className="absolute bottom-32 right-4 z-30 flex flex-col gap-3 pointer-events-auto">
+        
+        {/* Кнопка GPS (Показываем только если есть GPS) */}
+        {userLocation && (
+          <button 
+            onClick={() => setFollowUser(true)}
+            className={clsx(
+              "w-12 h-12 rounded-2xl flex items-center justify-center backdrop-blur-xl border transition-all shadow-xl active:scale-90",
+              followUser 
+                ? "bg-blue-500 text-white border-blue-400 shadow-[0_0_20px_rgba(59,130,246,0.5)]" 
+                : "bg-black/40 text-white/50 border-white/10"
+            )}
+          >
+            <Navigation size={20} fill={followUser ? "currentColor" : "none"} />
+          </button>
+        )}
+
+        {/* Кнопка Вида (Одна кнопка - переключатель) */}
         <button 
-          onClick={() => setViewMode('map')} 
+          onClick={() => setViewMode(viewMode === 'map' ? 'list' : 'map')} 
           className={clsx(
             "w-12 h-12 rounded-2xl flex items-center justify-center backdrop-blur-xl border transition-all shadow-xl active:scale-90",
-            viewMode === 'map' ? "bg-white text-black border-white" : "bg-black/40 text-white/50 border-white/10"
+            viewMode === 'list' 
+              ? "bg-white text-black border-white" 
+              : "bg-black/40 text-white/50 border-white/10"
           )}
         >
-          <MapIcon size={20} />
-        </button>
-        <button 
-          onClick={() => setViewMode('list')} 
-          className={clsx(
-            "w-12 h-12 rounded-2xl flex items-center justify-center backdrop-blur-xl border transition-all shadow-xl active:scale-90",
-            viewMode === 'list' ? "bg-white text-black border-white" : "bg-black/40 text-white/50 border-white/10"
-          )}
-        >
-          <LayoutGrid size={20} />
+          {/* Если Карта - показываем иконку Списка, и наоборот */}
+          {viewMode === 'map' ? <LayoutGrid size={20} /> : <MapIcon size={20} />}
         </button>
       </div>
 
@@ -223,7 +237,6 @@ export default function MapPage({ onOpenCreate }) {
         onClose={() => setSelectedVenue(null)}
         onCreateImpulse={(venue) => {
           setSelectedVenue(null);
-          // Передаем также координаты юзера, если есть
           onOpenCreate({ venue, location: userLocation }); 
         }} 
       />
