@@ -19,7 +19,7 @@ const messageVariants = {
 };
 
 export default function ChatDetailPage() {
-  const { id } = useParams(); // это match_id
+  const { id } = useParams(); // match_id
   const { user } = useAuth();
   const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
@@ -31,7 +31,7 @@ export default function ChatDetailPage() {
     if (!user || !id) return;
 
     const fetchChatData = async () => {
-      // 1. Получаем инфо о матче, чтобы понять с кем переписка
+      // 1. Получаем инфо о матче
       const { data: match } = await supabase
         .from('matches')
         .select(`initiator:initiator_id(id, first_name, avatar_url), requester:requester_id(id, first_name, avatar_url)`)
@@ -39,12 +39,11 @@ export default function ChatDetailPage() {
         .single();
 
       if (match) {
-        // Определяем, кто из двух участников — партнер
         const partnerData = match.initiator.id === user.id ? match.requester : match.initiator;
         setPartner(partnerData);
       }
 
-      // 2. Загружаем историю сообщений
+      // 2. Загружаем историю
       const { data: msgs } = await supabase
         .from('messages')
         .select('*')
@@ -56,17 +55,21 @@ export default function ChatDetailPage() {
 
     fetchChatData();
 
-    // 3. Подписка на новые сообщения в реальном времени
+    // 3. Подписка (Realtime)
     const channel = supabase.channel(`chat:${id}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `match_id=eq.${id}` }, (payload) => {
-        setMessages((prev) => [...prev, payload.new]);
+        // Проверяем, нет ли уже этого сообщения (чтобы не дублировать свое же)
+        setMessages((prev) => {
+           if (prev.some(m => m.id === payload.new.id)) return prev;
+           return [...prev, payload.new];
+        });
       })
       .subscribe();
 
     return () => supabase.removeChannel(channel);
   }, [id, user]);
 
-  // Автоскролл к последнему сообщению
+  // Автоскролл
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -74,30 +77,48 @@ export default function ChatDetailPage() {
   const handleSend = async () => {
     if (!newMessage.trim()) return;
     
-    const text = newMessage;
-    setNewMessage(''); // Очищаем поле сразу для UX
+    const text = newMessage.trim();
+    setNewMessage(''); // Очищаем поле мгновенно
 
-    const { error } = await supabase.from('messages').insert([{
+    // ОПТИМИСТИЧНОЕ ОБНОВЛЕНИЕ (Мгновенно показываем в UI)
+    const tempId = Date.now(); // Временный ID
+    const optimisticMsg = {
+      id: tempId,
+      match_id: id,
+      sender_id: user.id,
+      text: text,
+      created_at: new Date().toISOString()
+    };
+    
+    setMessages(prev => [...prev, optimisticMsg]);
+
+    // Отправляем в базу
+    const { data, error } = await supabase.from('messages').insert([{
       match_id: id,
       sender_id: user.id,
       text: text
-    }]);
+    }]).select().single();
 
     if (error) {
-        console.error('Error sending message:', error);
-        // Можно вернуть текст в поле ввода, если ошибка
-        setNewMessage(text);
+        console.error('Ошибка отправки:', error);
+        // Если ошибка — убираем временное сообщение (или показываем ошибку)
+        setMessages(prev => prev.filter(m => m.id !== tempId));
+        setNewMessage(text); // Возвращаем текст
+    } else if (data) {
+        // Заменяем временное сообщение на реальное из базы (чтобы ID был настоящий)
+        setMessages(prev => prev.map(m => m.id === tempId ? data : m));
     }
   };
 
   return (
     <div className="w-full h-full bg-black flex flex-col">
-      {/* Header */}
-      <div className="pt-14 pb-4 px-4 flex items-center justify-between bg-black/80 backdrop-blur-md border-b border-white/5 z-20">
+      {/* HEADER */}
+      {/* FIX: Добавил 'pr-16' (padding-right), чтобы контент не перекрывался кнопкой меню Telegram */}
+      <div className="pt-14 pb-4 pl-4 pr-16 flex items-center justify-between bg-black/80 backdrop-blur-md border-b border-white/5 z-20">
         <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-white active:opacity-50 transition-opacity"><ArrowLeft size={24} /></button>
         
         <div className="flex flex-col items-center">
-          <span className="font-bold text-white text-[17px]">{partner?.first_name || 'Загрузка...'}</span>
+          <span className="font-bold text-white text-[17px]">{partner?.first_name || '...'}</span>
           <span className="text-[11px] text-green-500 font-medium">Online</span>
         </div>
         
@@ -136,7 +157,7 @@ export default function ChatDetailPage() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
+      {/* Input Area */}
       <div className="p-4 bg-black border-t border-white/10 pb-8">
         <div className="flex gap-2 items-center bg-[#1C1C1E] rounded-full p-2 pl-4">
           <input 
