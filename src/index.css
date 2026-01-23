@@ -1,16 +1,46 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-/* PREMIUM SCROLLBAR (Скрываем, но оставляем функционал) */
-@layer utilities {
-  .no-scrollbar::-webkit-scrollbar {
+@theme {
+  /* Переносим цвета из твоего конфига */
+  --color-background: #0F0F11;
+  --color-surface: #1C1C1E;
+  --color-primary: #8B5CF6;
+  --color-primary-dark: #7C3AED;
+  --color-secondary: #3F3F46;
+  --color-text: #FFFFFF;
+  --color-text-muted: #A1A1AA;
+
+  /* Шрифты */
+  --font-sans: 'Inter', system-ui, sans-serif;
+
+  /* Анимации */
+  --animate-fade-in: fadeIn 0.3s ease-out;
+  --animate-slide-up: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-ping-slow: ping-slow 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+
+  @keyframes fadeIn {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+  @keyframes slideUp {
+    0% { transform: translateY(100%); }
+    100% { transform: translateY(0); }
+  }
+  @keyframes ping-slow {
+    75%, 100% {
+      transform: scale(2);
+      opacity: 0;
+    }
+  }
+}
+
+/* PREMIUM SCROLLBAR */
+@utility no-scrollbar {
+  &::-webkit-scrollbar {
     display: none;
   }
-  .no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* PREMIUM GLASS EFFECT */
@@ -22,24 +52,13 @@
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
 }
 
-/* ACTIVE PRESS EFFECT (Для всех кнопок) */
+/* ACTIVE PRESS EFFECT */
 .active-press:active {
   transform: scale(0.96);
   transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* АНИМАЦИЯ ПУЛЬСАЦИИ ТОЧКИ GPS */
-@keyframes ping-slow {
-  75%, 100% {
-    transform: scale(2);
-    opacity: 0;
-  }
-}
-.animate-ping-slow {
-  animation: ping-slow 2s cubic-bezier(0, 0, 0.2, 1) infinite;
-}
-
-/* Убираем дефолтные отступы */
+/* Глобальные сбросы */
 body, html, #root {
   width: 100%;
   height: 100%;
@@ -47,6 +66,6 @@ body, html, #root {
   padding: 0;
   background-color: #000;
   color: white;
-  -webkit-tap-highlight-color: transparent; /* Убирает синий квадрат при клике на Android */
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  font-family: var(--font-sans);
 }

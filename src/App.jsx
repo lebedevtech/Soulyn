@@ -14,7 +14,7 @@ import OnboardingPage from './pages/OnboardingPage';
 
 import BottomNav from './components/layout/BottomNav';
 import CreateImpulseSheet from './features/map/CreateImpulseSheet';
-import MobileFrame from './components/layout/MobileFrame'; // Импорт есть, теперь будем использовать
+import MobileFrame from './components/layout/MobileFrame';
 
 export default function App() {
   const location = useLocation();
@@ -23,7 +23,6 @@ export default function App() {
   const [createData, setCreateData] = useState(null); 
 
   useEffect(() => {
-    // Проверка: мы в Telegram или в браузере?
     if (WebApp.initData) {
       setIsInTelegram(true);
       WebApp.ready();
@@ -39,7 +38,7 @@ export default function App() {
     setCreateData(initialData); 
   };
 
-  // Выносим контент в отдельную переменную для чистоты
+  // Контент вынесен в переменную для удобства
   const content = (
     <div className="relative w-full h-full bg-black overflow-hidden">
       <AnimatePresence mode="wait" initial={false}>
@@ -69,13 +68,12 @@ export default function App() {
     <AuthProvider>
       <LocationProvider>
         {isInTelegram ? (
-          // ВЕРСИЯ ДЛЯ TELEGRAM (На весь экран)
+          // Для Telegram: на весь экран
           <div className="fixed inset-0 w-full h-full bg-black overflow-hidden">
             {content}
           </div>
         ) : (
-          // ВЕРСИЯ ДЛЯ БРАУЗЕРА (В рамке телефона)
-          // Исправлено: теперь используем компонент MobileFrame
+          // Для Браузера: используем рамку телефона
           <MobileFrame>
             {content}
           </MobileFrame>
