@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { 
-  LogOut, User, ChevronRight, Star, Shield, Bell, Settings
+  LogOut, User, ChevronRight, Star, Shield, Bell, Settings, QrCode, Crown
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import clsx from 'clsx';
@@ -8,67 +8,104 @@ import clsx from 'clsx';
 export default function ProfilePage() {
   const { user, signOut } = useAuth();
 
+  // Форматирование даты (Member Since)
+  const memberSince = user?.created_at 
+    ? new Date(user.created_at).toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })
+    : 'Январь 2026';
+
   return (
     <div className="relative w-full h-full bg-black flex flex-col overflow-y-auto no-scrollbar">
       
-      {/* HEADER: Уровень top-14 (56px) как на карте. Текст максимально поднят. */}
+      {/* HEADER: Эталонный стиль (top-14, -translate-y-3) */}
       <div className="absolute top-14 left-0 right-0 h-[52px] z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md border-b border-white/5 text-center">
         <span className="text-[17px] font-bold text-white tracking-tight -translate-y-3">Профиль</span>
       </div>
 
       <div className="absolute bottom-0 left-0 right-0 h-32 z-10 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none" />
 
-      {/* CONTENT: pt-28 (вместо pt-32) для подъема контента выше */}
-      <div className="flex-1 pt-28 pb-32">
+      {/* CONTENT: pt-28 для подъема контента */}
+      <div className="flex-1 pt-28 pb-32 px-6">
         
-        {/* User Card: mt-2 (вместо mt-6) для минимального зазора с хедером */}
-        <div className="px-6 mb-8 mt-2">
-          <div className="flex items-center gap-5">
-            <div className="relative">
-              <div className="w-24 h-24 rounded-full border-2 border-primary/30 p-1">
-                <img 
-                  src={user?.avatar_url || 'https://i.pravatar.cc/150'} 
-                  className="w-full h-full rounded-full object-cover" 
-                  alt="Avatar" 
-                />
+        {/* CLUB MEMBER CARD: Новый премиальный блок */}
+        <motion.div 
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative w-full aspect-[1.6/1] glass-panel rounded-[32px] p-6 mb-10 mt-2 overflow-hidden border border-white/10"
+        >
+          {/* Декоративный градиент на фоне карты */}
+          <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/20 rounded-full blur-[60px]" />
+          <div className="absolute -bottom-12 -left-12 w-32 h-32 bg-blue-500/10 rounded-full blur-[40px]" />
+
+          <div className="relative h-full flex flex-col justify-between">
+            {/* Top Row: Brand & Status */}
+            <div className="flex justify-between items-start">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mb-1">Club Member</span>
+                <h2 className="text-xl font-black text-white tracking-tighter">Soulyn</h2>
               </div>
-              <div className="absolute -bottom-1 -right-1 bg-primary text-white p-1.5 rounded-full border-4 border-black">
-                <Star size={12} fill="currentColor" />
+              <div className="p-2 bg-white/5 rounded-xl border border-white/10">
+                <QrCode size={20} className="text-white/40" />
               </div>
             </div>
-            
-            <div>
-              <h2 className="text-2xl font-black text-white tracking-tight">
-                {user?.first_name || 'Пользователь'}
-              </h2>
-              <p className="text-white/40 text-sm font-medium mt-1">@soulyn_user</p>
-              <div className="flex items-center gap-2 mt-2">
-                <span className="px-2 py-0.5 bg-white/5 border border-white/10 rounded-md text-[10px] font-black text-primary uppercase tracking-wider">
-                  Premium
+
+            {/* Middle Row: User Info */}
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <div className="w-16 h-16 rounded-full border-2 border-primary/30 p-1">
+                  <img 
+                    src={user?.avatar_url || 'https://i.pravatar.cc/150'} 
+                    className="w-full h-full rounded-full object-cover" 
+                    alt="Avatar" 
+                  />
+                </div>
+                {user?.is_premium && (
+                  <div className="absolute -bottom-1 -right-1 bg-black rounded-full p-1.5 border border-yellow-500 shadow-lg">
+                    <Star size={10} className="text-yellow-500 fill-yellow-500" />
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-col">
+                <h3 className="text-lg font-bold text-white tracking-tight leading-none mb-1">
+                  {user?.first_name || 'Пользователь'}
+                </h3>
+                <span className="text-[11px] text-white/40 font-medium tracking-wide">
+                  ID: #000{user?.id?.toString().slice(-3) || '482'}
                 </span>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-3 gap-3 px-6 mb-10">
+            {/* Bottom Row: Details */}
+            <div className="flex justify-between items-end border-t border-white/5 pt-4">
+              <div className="flex flex-col">
+                <span className="text-[8px] font-black text-white/20 uppercase tracking-widest mb-0.5">Member Since</span>
+                <span className="text-[10px] font-bold text-white/60 uppercase">{memberSince}</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full">
+                <Crown size={10} className="text-primary fill-primary" />
+                <span className="text-[9px] font-black text-white uppercase tracking-wider">Premium</span>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Stats Grid: Стабильная структура с улучшенными иконками */}
+        <div className="grid grid-cols-3 gap-3 mb-10">
           {[
-            { label: 'Импульсы', value: '12' },
-            { label: 'Мэтчи', value: '48' },
-            { label: 'Рейтинг', value: '4.9' },
+            { label: 'Импульсы', value: '12', color: 'text-primary' },
+            { label: 'Мэтчи', value: '48', color: 'text-blue-400' },
+            { label: 'Рейтинг', value: '4.9', color: 'text-yellow-400' },
           ].map((stat, i) => (
-            <div key={i} className="bg-white/5 border border-white/5 rounded-2xl p-4 text-center">
-              <p className="text-xl font-black text-white">{stat.value}</p>
-              <p className="text-[10px] text-white/30 font-bold uppercase mt-1 tracking-tighter">{stat.label}</p>
+            <div key={i} className="bg-white/5 border border-white/5 rounded-[24px] p-4 text-center">
+              <p className={clsx("text-xl font-black mb-0.5", stat.color)}>{stat.value}</p>
+              <p className="text-[9px] text-white/20 font-black uppercase tracking-tighter">{stat.label}</p>
             </div>
           ))}
         </div>
 
-        {/* Settings Groups */}
-        <div className="px-6 space-y-6">
+        {/* Settings Groups: Эталонный список настроек */}
+        <div className="space-y-6">
           <section>
-            <h3 className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em] mb-4 ml-1">Аккаунт</h3>
+            <h3 className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em] mb-4 ml-1 text-left">Аккаунт</h3>
             <div className="bg-white/5 border border-white/5 rounded-[24px] overflow-hidden">
               {[
                 { icon: User, label: 'Личные данные', color: 'text-blue-400' },
@@ -88,7 +125,7 @@ export default function ProfilePage() {
                     <div className={clsx("p-2 rounded-xl bg-white/5", item.color)}>
                       <item.icon size={18} />
                     </div>
-                    <span className={clsx("font-bold", item.color === 'text-red-500' ? "text-red-500" : "text-white/80")}>
+                    <span className={clsx("font-bold text-[15px]", item.color === 'text-red-500' ? "text-red-500" : "text-white/80")}>
                       {item.label}
                     </span>
                   </div>
