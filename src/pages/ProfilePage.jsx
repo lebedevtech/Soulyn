@@ -11,18 +11,18 @@ export default function ProfilePage() {
   return (
     <div className="relative w-full h-full bg-black flex flex-col overflow-y-auto no-scrollbar">
       
-      {/* HEADER: Текст поднят выше. */}
+      {/* HEADER: Уровень top-14 (56px) как на карте. Текст максимально поднят. */}
       <div className="absolute top-14 left-0 right-0 h-[52px] z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md border-b border-white/5 text-center">
         <span className="text-[17px] font-bold text-white tracking-tight -translate-y-3">Профиль</span>
       </div>
 
       <div className="absolute bottom-0 left-0 right-0 h-32 z-10 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none" />
 
-      {/* CONTENT: pt-32 для выравнивания под хедером */}
-      <div className="flex-1 pt-32 pb-32">
+      {/* CONTENT: pt-28 (вместо pt-32) для подъема контента выше */}
+      <div className="flex-1 pt-28 pb-32">
         
-        {/* User Card */}
-        <div className="px-6 mb-8 mt-6">
+        {/* User Card: mt-2 (вместо mt-6) для минимального зазора с хедером */}
+        <div className="px-6 mb-8 mt-2">
           <div className="flex items-center gap-5">
             <div className="relative">
               <div className="w-24 h-24 rounded-full border-2 border-primary/30 p-1">
