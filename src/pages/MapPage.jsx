@@ -11,36 +11,25 @@ import {
 import { useLocation } from '../context/LocationContext';
 import clsx from 'clsx';
 
-// === PREMIUM ANIMATION CONSTANTS ===
+// PREMIUM ANIMATION CONSTANTS
 const TRANSITION_EASE = [0.25, 0.1, 0.25, 1];
 
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: {
-      staggerChildren: 0.04,
-      delayChildren: 0.05
-    }
+    transition: { staggerChildren: 0.04, delayChildren: 0.05 }
   }
 };
 
 const cardVariants = {
-  hidden: { 
-    y: 30, // Чуть больше амплитуда для эффекта "выплывания" снизу
-    opacity: 0, 
-    filter: 'blur(10px)',
-    scale: 0.96 
-  },
+  hidden: { y: 20, opacity: 0, filter: 'blur(5px)', scale: 0.96 },
   visible: { 
     y: 0, 
     opacity: 1, 
     filter: 'blur(0px)',
     scale: 1,
-    transition: { 
-      duration: 0.5, 
-      ease: TRANSITION_EASE 
-    } 
+    transition: { duration: 0.5, ease: TRANSITION_EASE } 
   },
   tap: { scale: 0.97, transition: { duration: 0.1 } }
 };
@@ -143,14 +132,14 @@ export default function MapPage({ onOpenCreate }) {
             transition={{ duration: 0.25 }}
             className="absolute inset-0 z-10 bg-black/60 backdrop-blur-xl"
           >
-            {/* ГРАДИЕНТЫ (УВЕЛИЧЕНЫ ДЛЯ БОЛЬШЕГО ЗАТЕМНЕНИЯ) */}
-            <div className="absolute top-0 left-0 right-0 h-40 z-20 pointer-events-none bg-gradient-to-b from-black via-black/90 to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 h-64 z-20 pointer-events-none bg-gradient-to-t from-black via-black/95 to-transparent" />
+            {/* ГРАДИЕНТЫ (Старые, аккуратные) */}
+            <div className="absolute top-0 left-0 right-0 h-32 z-20 pointer-events-none bg-gradient-to-b from-black via-black/90 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 h-48 z-20 pointer-events-none bg-gradient-to-t from-black via-black/95 to-transparent" />
 
             <div className="w-full h-full overflow-y-auto no-scrollbar pt-32 pb-48 px-6 relative z-10">
               {mapLayer === 'places' ? (
                 // === СПИСОК МЕСТ ===
-                // Добавили key, чтобы анимация срабатывала при переключении
+                // Исправлено: добавлены initial и animate для списка
                 <motion.div 
                   key="places-list"
                   className="space-y-4 will-change-transform"
@@ -186,7 +175,6 @@ export default function MapPage({ onOpenCreate }) {
                   initial="hidden" 
                   animate="visible"
                 >
-                  {/* КАТЕГОРИИ */}
                   <motion.div variants={cardVariants} className="mb-10">
                     <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mb-5 ml-1">Категории</h3>
                     <div className="grid grid-cols-2 gap-3">
@@ -263,29 +251,12 @@ export default function MapPage({ onOpenCreate }) {
         )}
       </AnimatePresence>
 
-      {/* ШТОРКИ (Теперь с правильной анимацией закрытия) */}
       <AnimatePresence>
-        {selectedImpulse && (
-          <ImpulseSheet 
-            key="impulse-sheet" // Важно для AnimatePresence
-            impulse={selectedImpulse} 
-            onClose={() => setSelectedImpulse(null)} 
-          />
-        )}
+        {selectedImpulse && <ImpulseSheet key="impulse-sheet" impulse={selectedImpulse} onClose={() => setSelectedImpulse(null)} />}
       </AnimatePresence>
       
       <AnimatePresence>
-        {selectedVenue && (
-          <VenueSheet 
-            key="venue-sheet" // Важно для AnimatePresence
-            venue={selectedVenue} 
-            onClose={() => setSelectedVenue(null)} 
-            onCreateImpulse={(venue) => {
-              setSelectedVenue(null);
-              onOpenCreate({ venue, location: userLocation }); 
-            }} 
-          />
-        )}
+        {selectedVenue && <VenueSheet key="venue-sheet" venue={selectedVenue} onClose={() => setSelectedVenue(null)} onCreateImpulse={(venue) => { setSelectedVenue(null); onOpenCreate({ venue, location: userLocation }); }} />}
       </AnimatePresence>
     </div>
   );

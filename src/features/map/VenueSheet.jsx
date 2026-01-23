@@ -2,15 +2,11 @@ import { motion } from 'framer-motion';
 import { X, MapPin, Clock, Star, ArrowRight } from 'lucide-react';
 import clsx from 'clsx';
 
-// PREMIUM SHEET PHYSICS
 const SHEET_TRANSITION = { duration: 0.4, ease: [0.25, 1, 0.5, 1] };
 
 export default function VenueSheet({ venue, onClose, onCreateImpulse }) {
-  // if (!venue) return null; — убрали, так как родитель контролирует рендер
-
   return (
     <>
-      {/* Backdrop */}
       <motion.div 
         initial={{ opacity: 0 }} 
         animate={{ opacity: 1 }} 
@@ -19,7 +15,6 @@ export default function VenueSheet({ venue, onClose, onCreateImpulse }) {
         className="absolute inset-0 z-40 bg-black/60 backdrop-blur-sm"
       />
       
-      {/* Sheet */}
       <motion.div 
         initial={{ y: "100%" }} 
         animate={{ y: 0 }} 
@@ -28,41 +23,30 @@ export default function VenueSheet({ venue, onClose, onCreateImpulse }) {
         className="absolute bottom-0 left-0 right-0 z-50 bg-[#121212] rounded-t-[32px] border-t border-white/10 overflow-hidden shadow-2xl"
       >
         {/* Drag Handle */}
-        <div className="w-full flex justify-center pt-3 pb-1">
-          <div className="w-12 h-1.5 bg-white/20 rounded-full" />
-        </div>
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 w-12 h-1.5 bg-white/20 rounded-full shadow-lg" />
 
-        {/* Image Header */}
-        {/* Убрали mt-2, теперь фото прилипает к верху */}
-        <div className="relative h-64 w-full"> 
+        {/* Image Header - Full Width & Height */}
+        <div className="relative h-72 w-full"> 
           <img src={venue.image_url} className="w-full h-full object-cover" alt="" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#121212] via-transparent to-transparent" />
+          {/* Градиент стал мощнее для читаемости */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#121212] via-[#121212]/40 to-transparent" />
           
-          <button 
-            onClick={onClose}
-            className="absolute top-4 right-4 p-2 bg-black/40 backdrop-blur-md rounded-full text-white/80 border border-white/10"
-          >
+          <button onClick={onClose} className="absolute top-6 right-6 p-2 bg-black/40 backdrop-blur-md rounded-full text-white/80 border border-white/10 z-20">
             <X size={20} />
           </button>
           
-          <div className="absolute bottom-0 left-0 p-6 w-full">
+          <div className="absolute bottom-0 left-0 p-6 w-full z-10">
             <div className="flex items-center gap-2 mb-2">
-               {venue.is_partner && (
-                 <span className="px-2 py-0.5 rounded bg-white/20 backdrop-blur-md border border-white/10 text-[10px] font-bold uppercase text-white tracking-wider flex items-center gap-1">
-                   <Star size={10} className="fill-white" /> Partner
-                 </span>
-               )}
-               <span className="px-2 py-0.5 rounded bg-black/40 backdrop-blur-md border border-white/10 text-[10px] font-bold uppercase text-white/80 tracking-wider">
-                 {venue.average_check}
-               </span>
+               {venue.is_partner && <span className="px-2 py-0.5 rounded bg-white/20 backdrop-blur-md border border-white/10 text-[10px] font-bold uppercase text-white tracking-wider flex items-center gap-1"><Star size={10} className="fill-white" /> Partner</span>}
+               <span className="px-2 py-0.5 rounded bg-black/40 backdrop-blur-md border border-white/10 text-[10px] font-bold uppercase text-white/80 tracking-wider">{venue.average_check}</span>
             </div>
-            <h2 className="text-3xl font-black text-white leading-none tracking-tight">{venue.name}</h2>
-            <p className="text-white/60 text-sm mt-1 line-clamp-1">{venue.description}</p>
+            <h2 className="text-3xl font-black text-white leading-none tracking-tight mb-1">{venue.name}</h2>
+            <p className="text-white/70 text-sm line-clamp-1">{venue.description}</p>
           </div>
         </div>
 
         {/* Content */}
-        <div className="px-6 pb-10 pt-4 space-y-6">
+        <div className="px-6 pb-12 pt-6 space-y-6 bg-[#121212]">
           <div className="flex gap-4">
              <div className="flex-1 p-3 rounded-2xl bg-white/5 border border-white/5 flex items-center gap-3">
                <div className="p-2 bg-white/10 rounded-full text-white"><Clock size={18} /></div>
