@@ -26,7 +26,7 @@ const cardVariants = {
   hidden: { 
     y: 20, 
     opacity: 0, 
-    // Убрали filter: 'blur(...)', чтобы не было мерцания серого фона
+    // УБРАЛИ filter: 'blur(...)', чтобы не конфликтовал с glass-эффектом
     scale: 0.96 
   },
   visible: { 
@@ -100,7 +100,7 @@ export default function MapPage({ onOpenCreate }) {
     <div className="relative w-full h-full bg-black overflow-hidden">
       
       {/* HEADER */}
-      {/* Z-INDEX ИСПРАВЛЕН: z-60 (выше градиентов z-50) */}
+      {/* Z-INDEX ИСПРАВЛЕН: z-[60] (выше любых градиентов) */}
       <div className="absolute top-14 left-1/2 -translate-x-1/2 z-[60] flex flex-col items-center pointer-events-none">
         <h1 className="text-xl font-black text-white tracking-tighter drop-shadow-2xl leading-none">Soulyn</h1>
         <div className="flex items-center gap-1.5 mt-1">
@@ -127,14 +127,6 @@ export default function MapPage({ onOpenCreate }) {
         <MapView impulses={impulses} venues={venues} mode={mapLayer} userLocation={userLocation} followUser={followUser} onUserInteraction={() => setFollowUser(false)} onImpulseClick={setSelectedImpulse} onVenueClick={(venue) => setSelectedVenue(venue)} />
       </div>
 
-      {/* ГРАДИЕНТЫ (Z-50) */}
-      {viewMode === 'list' && (
-        <>
-          <div className="absolute top-0 left-0 right-0 h-32 z-50 pointer-events-none bg-gradient-to-b from-black via-black/90 to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 h-48 z-50 pointer-events-none bg-gradient-to-t from-black via-black/95 to-transparent" />
-        </>
-      )}
-
       {/* LIST VIEW */}
       <AnimatePresence>
         {viewMode === 'list' && (
@@ -145,11 +137,14 @@ export default function MapPage({ onOpenCreate }) {
             transition={{ duration: 0.25 }}
             className="absolute inset-0 z-10 bg-black/60 backdrop-blur-xl"
           >
+            {/* ГРАДИЕНТЫ (Внутри контейнера, чтобы уходили вместе с ним) */}
+            <div className="absolute top-0 left-0 right-0 h-32 z-20 pointer-events-none bg-gradient-to-b from-black via-black/90 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 h-48 z-20 pointer-events-none bg-gradient-to-t from-black via-black/95 to-transparent" />
+
             <div className="w-full h-full overflow-y-auto no-scrollbar pt-32 pb-48 px-6 relative z-10">
               {mapLayer === 'places' ? (
                 // === СПИСОК МЕСТ ===
                 <motion.div 
-                  key="places-list"
                   className="space-y-4 will-change-transform"
                   variants={containerVariants} 
                   initial="hidden" 
@@ -160,9 +155,6 @@ export default function MapPage({ onOpenCreate }) {
                    {venues.map(venue => (
                      <motion.button 
                        key={venue.id} 
-                       initial="hidden"
-                       whileInView="visible"
-                       viewport={{ once: true, margin: "0px 0px -50px 0px" }}
                        variants={cardVariants}
                        whileTap="tap"
                        onClick={() => setSelectedVenue(venue)} 
@@ -180,7 +172,6 @@ export default function MapPage({ onOpenCreate }) {
               ) : (
                 // === СПИСОК ИМПУЛЬСОВ ===
                 <motion.div 
-                  key="impulses-list"
                   className="space-y-4 will-change-transform"
                   variants={containerVariants} 
                   initial="hidden" 
@@ -255,13 +246,8 @@ export default function MapPage({ onOpenCreate }) {
         )}
       </AnimatePresence>
 
-      <AnimatePresence>
-        {selectedImpulse && <ImpulseSheet key="impulse-sheet" impulse={selectedImpulse} onClose={() => setSelectedImpulse(null)} />}
-      </AnimatePresence>
-      
-      <AnimatePresence>
-        {selectedVenue && <VenueSheet key="venue-sheet" venue={selectedVenue} onClose={() => setSelectedVenue(null)} onCreateImpulse={(venue) => { setSelectedVenue(null); onOpenCreate({ venue, location: userLocation }); }} />}
-      </AnimatePresence>
+      <ImpulseSheet impulse={selectedImpulse} onClose={() => setSelectedImpulse(null)} />
+      <VenueSheet venue={selectedVenue} onClose={() => setSelectedVenue(null)} onCreateImpulse={(venue) => { setSelectedVenue(null); onOpenCreate({ venue, location: userLocation }); }} />
     </div>
   );
 }
