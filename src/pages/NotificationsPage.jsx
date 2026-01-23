@@ -4,7 +4,6 @@ import { Bell, Heart, UserPlus, Star } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import clsx from 'clsx';
 
-// === PREMIUM PHYSICS (SYNCED) ===
 const TRANSITION_EASE = [0.25, 0.1, 0.25, 1];
 
 const listContainerVariants = {
@@ -53,7 +52,11 @@ export default function NotificationsPage() {
         <span className="text-[17px] font-bold text-white tracking-tight">Уведомления</span>
       </div>
 
-      <div className="flex-1 overflow-y-auto no-scrollbar pt-28 pb-32 px-4">
+      {/* ГРАДИЕНТЫ ДЛЯ СПИСКА (Исправлено: уход в затемнение) */}
+      <div className="absolute top-[100px] left-0 right-0 h-12 z-10 bg-gradient-to-b from-black to-transparent pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 h-32 z-10 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none" />
+
+      <div className="flex-1 overflow-y-auto no-scrollbar pt-28 pb-32 px-4 relative z-0">
         <motion.div 
           className="space-y-2 will-change-transform"
           variants={listContainerVariants}

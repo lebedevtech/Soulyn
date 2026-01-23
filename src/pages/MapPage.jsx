@@ -12,14 +12,14 @@ import { useLocation } from '../context/LocationContext';
 import clsx from 'clsx';
 
 // === PREMIUM ANIMATION CONSTANTS ===
-const TRANSITION_EASE = [0.25, 0.1, 0.25, 1]; // Apple-style easing
+const TRANSITION_EASE = [0.25, 0.1, 0.25, 1];
 
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.03, // Очень быстрый каскад (snappy)
+      staggerChildren: 0.04,
       delayChildren: 0.05
     }
   }
@@ -27,9 +27,9 @@ const containerVariants = {
 
 const cardVariants = {
   hidden: { 
-    y: 20, 
+    y: 30, // Чуть больше амплитуда для эффекта "выплывания" снизу
     opacity: 0, 
-    filter: 'blur(10px)', // Сильный блюр на старте
+    filter: 'blur(10px)',
     scale: 0.96 
   },
   visible: { 
@@ -38,11 +38,11 @@ const cardVariants = {
     filter: 'blur(0px)',
     scale: 1,
     transition: { 
-      duration: 0.4, 
+      duration: 0.5, 
       ease: TRANSITION_EASE 
     } 
   },
-  tap: { scale: 0.97, transition: { duration: 0.1 } } // Мгновенный отклик
+  tap: { scale: 0.97, transition: { duration: 0.1 } }
 };
 
 const CATEGORIES = [
@@ -133,7 +133,7 @@ export default function MapPage({ onOpenCreate }) {
         <MapView impulses={impulses} venues={venues} mode={mapLayer} userLocation={userLocation} followUser={followUser} onUserInteraction={() => setFollowUser(false)} onImpulseClick={setSelectedImpulse} onVenueClick={(venue) => setSelectedVenue(venue)} />
       </div>
 
-      {/* LIST VIEW (PREMIUM) */}
+      {/* LIST VIEW */}
       <AnimatePresence>
         {viewMode === 'list' && (
           <motion.div 
@@ -143,14 +143,17 @@ export default function MapPage({ onOpenCreate }) {
             transition={{ duration: 0.25 }}
             className="absolute inset-0 z-10 bg-black/60 backdrop-blur-xl"
           >
-            <div className="absolute top-0 left-0 right-0 h-32 z-20 pointer-events-none bg-gradient-to-b from-black via-black/90 to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 h-48 z-20 pointer-events-none bg-gradient-to-t from-black via-black/95 to-transparent" />
+            {/* ГРАДИЕНТЫ (УВЕЛИЧЕНЫ ДЛЯ БОЛЬШЕГО ЗАТЕМНЕНИЯ) */}
+            <div className="absolute top-0 left-0 right-0 h-40 z-20 pointer-events-none bg-gradient-to-b from-black via-black/90 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 h-64 z-20 pointer-events-none bg-gradient-to-t from-black via-black/95 to-transparent" />
 
             <div className="w-full h-full overflow-y-auto no-scrollbar pt-32 pb-48 px-6 relative z-10">
               {mapLayer === 'places' ? (
                 // === СПИСОК МЕСТ ===
+                // Добавили key, чтобы анимация срабатывала при переключении
                 <motion.div 
-                  className="space-y-4 will-change-transform" // Оптимизация
+                  key="places-list"
+                  className="space-y-4 will-change-transform"
                   variants={containerVariants} 
                   initial="hidden" 
                   animate="visible"
@@ -161,7 +164,7 @@ export default function MapPage({ onOpenCreate }) {
                      <motion.button 
                        key={venue.id} 
                        variants={cardVariants}
-                       whileTap="tap" // Мгновенный отклик
+                       whileTap="tap"
                        onClick={() => setSelectedVenue(venue)} 
                        className="w-full glass-panel p-4 rounded-[24px] flex gap-4 text-left group"
                      >
@@ -177,6 +180,7 @@ export default function MapPage({ onOpenCreate }) {
               ) : (
                 // === СПИСОК ИМПУЛЬСОВ ===
                 <motion.div 
+                  key="impulses-list"
                   className="space-y-4 will-change-transform"
                   variants={containerVariants} 
                   initial="hidden" 
@@ -259,8 +263,30 @@ export default function MapPage({ onOpenCreate }) {
         )}
       </AnimatePresence>
 
-      <ImpulseSheet impulse={selectedImpulse} onClose={() => setSelectedImpulse(null)} />
-      <VenueSheet venue={selectedVenue} onClose={() => setSelectedVenue(null)} onCreateImpulse={(venue) => { setSelectedVenue(null); onOpenCreate({ venue, location: userLocation }); }} />
+      {/* ШТОРКИ (Теперь с правильной анимацией закрытия) */}
+      <AnimatePresence>
+        {selectedImpulse && (
+          <ImpulseSheet 
+            key="impulse-sheet" // Важно для AnimatePresence
+            impulse={selectedImpulse} 
+            onClose={() => setSelectedImpulse(null)} 
+          />
+        )}
+      </AnimatePresence>
+      
+      <AnimatePresence>
+        {selectedVenue && (
+          <VenueSheet 
+            key="venue-sheet" // Важно для AnimatePresence
+            venue={selectedVenue} 
+            onClose={() => setSelectedVenue(null)} 
+            onCreateImpulse={(venue) => {
+              setSelectedVenue(null);
+              onOpenCreate({ venue, location: userLocation }); 
+            }} 
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

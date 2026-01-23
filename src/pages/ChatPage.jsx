@@ -5,7 +5,6 @@ import { MessageCircle, Search, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 
-// PREMIUM ANIMATION (SYNCED)
 const TRANSITION_EASE = [0.25, 0.1, 0.25, 1];
 
 const containerVariants = {
@@ -57,12 +56,17 @@ export default function ChatPage() {
 
   return (
     <div className="relative w-full h-full bg-black flex flex-col">
+      {/* HEADER */}
       <div className="absolute top-12 left-0 right-0 h-[52px] z-20 flex items-center justify-center bg-black/80 backdrop-blur-md border-b border-white/5">
         <span className="text-[17px] font-bold text-white tracking-tight">Чаты</span>
         <button className="absolute right-4 p-2 text-white/50 hover:text-white transition-colors"><Search size={20} /></button>
       </div>
 
-      <div className="flex-1 overflow-y-auto no-scrollbar pt-28 pb-32 px-4">
+      {/* ГРАДИЕНТЫ (Исправлено) */}
+      <div className="absolute top-[100px] left-0 right-0 h-12 z-10 bg-gradient-to-b from-black to-transparent pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 h-32 z-10 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none" />
+
+      <div className="flex-1 overflow-y-auto no-scrollbar pt-28 pb-32 px-4 relative z-0">
         {chats.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-center">
             <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-4 text-white/20"><MessageCircle size={32} /></div>
