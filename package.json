@@ -10,7 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.91.0",
     "@tailwindcss/vite": "^4.1.18",
+    "@twa-dev/sdk": "^8.0.2",
     "clsx": "^2.1.1",
     "framer-motion": "^12.28.1",
     "leaflet": "^1.9.4",
