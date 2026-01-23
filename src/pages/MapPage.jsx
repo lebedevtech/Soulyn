@@ -11,6 +11,7 @@ import {
 import { useLocation } from '../context/LocationContext';
 import clsx from 'clsx';
 
+// PREMIUM ANIMATION CONSTANTS
 const TRANSITION_EASE = [0.25, 0.1, 0.25, 1];
 
 const containerVariants = {
@@ -26,7 +27,7 @@ const cardVariants = {
     y: 20, 
     opacity: 0, 
     scale: 0.96 
-    // УБРАЛИ BLUR (фикс мерцания)
+    // БЕЗ BLUR (Чистая анимация без артефактов)
   },
   visible: { 
     y: 0, 
@@ -98,7 +99,7 @@ export default function MapPage({ onOpenCreate }) {
   return (
     <div className="relative w-full h-full bg-black overflow-hidden">
       
-      {/* HEADER (Z-60: Поверх градиентов) */}
+      {/* HEADER (Z-60) */}
       <div className="absolute top-14 left-1/2 -translate-x-1/2 z-[60] flex flex-col items-center pointer-events-none">
         <h1 className="text-xl font-black text-white tracking-tighter drop-shadow-2xl leading-none">Soulyn</h1>
         <div className="flex items-center gap-1.5 mt-1">
@@ -142,12 +143,13 @@ export default function MapPage({ onOpenCreate }) {
             <div className="w-full h-full overflow-y-auto no-scrollbar pt-32 pb-48 px-6 relative z-10">
               {mapLayer === 'places' ? (
                 // === СПИСОК МЕСТ ===
+                // УБРАЛ will-change-transform (Фикс мерцания фона)
                 <motion.div 
                   key="places-list"
-                  className="space-y-4 will-change-transform"
+                  className="space-y-4"
                   variants={containerVariants} 
                   initial="hidden" 
-                  animate="visible" // Простая анимация без viewport (стабильнее)
+                  animate="visible"
                 >
                    <motion.h3 variants={cardVariants} className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] mb-6 ml-1">Лучшие места</motion.h3>
                    
@@ -170,9 +172,10 @@ export default function MapPage({ onOpenCreate }) {
                 </motion.div>
               ) : (
                 // === СПИСОК ИМПУЛЬСОВ ===
+                // УБРАЛ will-change-transform
                 <motion.div 
                   key="impulses-list"
-                  className="space-y-4 will-change-transform"
+                  className="space-y-4"
                   variants={containerVariants} 
                   initial="hidden" 
                   animate="visible"
