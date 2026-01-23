@@ -3,15 +3,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send, MapPin, Navigation } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
+import { useLocation } from '../../context/LocationContext'; // БЕРЕМ GPS ОТСЮДА
 import clsx from 'clsx';
 
 export default function CreateImpulseSheet({ isOpen, initialData, onClose }) {
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
+  
   const { user } = useAuth();
+  const { location: gpsLocation } = useLocation(); // Глобальные координаты
 
   const targetVenue = initialData?.venue;
-  const userLocation = initialData?.location; // Координаты [lat, lng] из GPS
 
   useEffect(() => {
     if (isOpen) setMessage('');
@@ -19,22 +21,23 @@ export default function CreateImpulseSheet({ isOpen, initialData, onClose }) {
 
   const handleCreate = async () => {
     if (!message.trim() || !user) return;
-    
     setIsSending(true);
 
-    // Определяем координаты:
-    // 1. Если выбрано место -> координаты места
-    // 2. Если есть GPS -> координаты юзера
-    // 3. Иначе -> случайные (центр Москвы)
     let lat, lng;
 
+    // ПРИОРИТЕТЫ КООРДИНАТ:
+    // 1. Координаты выбранного заведения
     if (targetVenue) {
       lat = targetVenue.lat;
       lng = targetVenue.lng;
-    } else if (userLocation) {
-      lat = userLocation[0];
-      lng = userLocation[1];
-    } else {
+    } 
+    // 2. Реальный GPS пользователя (из контекста)
+    else if (gpsLocation) {
+      lat = gpsLocation[0];
+      lng = gpsLocation[1];
+    } 
+    // 3. Фолбек (если GPS выключен) - Центр Москвы + рандом
+    else {
       lat = 55.7558 + (Math.random() - 0.5) * 0.02;
       lng = 37.6173 + (Math.random() - 0.5) * 0.02;
     }
@@ -42,8 +45,8 @@ export default function CreateImpulseSheet({ isOpen, initialData, onClose }) {
     const newImpulse = {
       user_id: user.id,
       message: message,
-      lat: lat,
-      lng: lng,
+      lat,
+      lng,
       venue_id: targetVenue ? targetVenue.id : null,
       is_ghost: false 
     };
@@ -88,11 +91,10 @@ export default function CreateImpulseSheet({ isOpen, initialData, onClose }) {
                     <span className="font-bold text-sm uppercase tracking-wider">{targetVenue.name}</span>
                   </div>
                 ) : (
-                  // Если без места, показываем статус GPS
                   <div className="flex items-center gap-1.5 mt-1 text-white/50">
                     <Navigation size={14} />
                     <span className="font-bold text-[10px] uppercase tracking-wider">
-                      {userLocation ? 'Моя геопозиция' : 'Случайная точка'}
+                      {gpsLocation ? 'Моя геопозиция' : 'Случайная точка'}
                     </span>
                   </div>
                 )}

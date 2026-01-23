@@ -7,12 +7,24 @@ import VenueSheet from '../features/map/VenueSheet';
 import { 
   LayoutGrid, 
   Map as MapIcon, 
-  Users,
-  Building2,
-  Star,
-  Navigation
+  Users, 
+  Building2, 
+  Navigation,
+  Coffee, 
+  Pizza, 
+  Film, 
+  Star, 
+  MapPin
 } from 'lucide-react';
+import { useLocation } from '../context/LocationContext';
 import clsx from 'clsx';
+
+const CATEGORIES = [
+  { id: 'coffee', label: 'Кофе', icon: Coffee, color: 'bg-orange-500' },
+  { id: 'food', label: 'Еда', icon: Pizza, color: 'bg-red-500' },
+  { id: 'movie', label: 'Кино', icon: Film, color: 'bg-purple-500' },
+  { id: 'vip', label: 'VIP', icon: Star, color: 'bg-yellow-500' },
+];
 
 const MapToggle = ({ mode, setMode }) => (
   <div className="flex flex-col gap-3 pointer-events-auto">
@@ -47,7 +59,8 @@ export default function MapPage({ onOpenCreate }) {
   const [impulses, setImpulses] = useState([]);
   const [venues, setVenues] = useState([]);
   
-  const [userLocation, setUserLocation] = useState(null);
+  // Берем GPS из глобального контекста
+  const { location: userLocation } = useLocation();
   const [followUser, setFollowUser] = useState(true);
 
   useEffect(() => {
@@ -64,23 +77,10 @@ export default function MapPage({ onOpenCreate }) {
 
     fetchData();
 
-    if (navigator.geolocation) {
-      const watchId = navigator.geolocation.watchPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          setUserLocation([latitude, longitude]);
-        },
-        (error) => console.error("GPS Error:", error),
-        { enableHighAccuracy: true }
-      );
-      return () => navigator.geolocation.clearWatch(watchId);
-    }
-
-    // REALTIME ПОДПИСКА (INSERT + DELETE)
+    // REALTIME ПОДПИСКА (Добавление и Удаление)
     const channel = supabase
       .channel('public:impulses')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'impulses' }, async (payload) => {
-        // Когда кто-то создал импульс - подгружаем детали
         const { data } = await supabase
           .from('impulses')
           .select(`*, users (*), venues (name)`)
@@ -89,9 +89,9 @@ export default function MapPage({ onOpenCreate }) {
         if (data) setImpulses((prev) => [data, ...prev]);
       })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'impulses' }, (payload) => {
-        // Когда импульс удален - убираем его из списка моментально
+        // Удаляем из списка
         setImpulses((current) => current.filter(imp => imp.id !== payload.old.id));
-        // Если удаленный импульс был открыт - закрываем шторку
+        // Если этот импульс был открыт - закрываем шторку
         if (selectedImpulse?.id === payload.old.id) {
           setSelectedImpulse(null);
         }
@@ -99,10 +99,9 @@ export default function MapPage({ onOpenCreate }) {
       .subscribe();
 
     return () => supabase.removeChannel(channel);
-  }, [selectedImpulse]); // Добавили зависимость, чтобы закрыть шторку
+  }, [selectedImpulse]);
 
   const handleGPSClick = () => {
-    if (followUser) {}
     setFollowUser(true);
   };
 
@@ -142,6 +141,7 @@ export default function MapPage({ onOpenCreate }) {
       {/* 4. КНОПКИ СПРАВА */}
       <div className="absolute bottom-32 right-4 z-30 flex flex-col gap-3 pointer-events-auto">
         
+        {/* Кнопка GPS */}
         {userLocation && (
           <button 
             onClick={handleGPSClick} 
@@ -156,6 +156,7 @@ export default function MapPage({ onOpenCreate }) {
           </button>
         )}
 
+        {/* Кнопка Вида */}
         <button 
           onClick={() => setViewMode(viewMode === 'map' ? 'list' : 'map')} 
           className={clsx(
@@ -169,7 +170,7 @@ export default function MapPage({ onOpenCreate }) {
         </button>
       </div>
 
-      {/* 5. СПИСОК */}
+      {/* 5. СПИСОК (ПОЛНЫЙ КОД) */}
       <AnimatePresence>
         {viewMode === 'list' && (
           <div className="absolute inset-0 z-10">
@@ -181,6 +182,7 @@ export default function MapPage({ onOpenCreate }) {
               className="w-full h-full bg-black/60 backdrop-blur-2xl overflow-y-auto no-scrollbar pt-32 pb-48 px-6 relative z-10"
             >
               {mapLayer === 'places' ? (
+                // --- СПИСОК ЗАВЕДЕНИЙ (PLACES) ---
                 <section>
                    <h3 className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] mb-6 ml-1">Лучшие места</h3>
                    <div className="space-y-4">
@@ -201,36 +203,62 @@ export default function MapPage({ onOpenCreate }) {
                    </div>
                 </section>
               ) : (
-                <section>
-                  <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mb-6 ml-1">Актуально сейчас</h3>
-                  <div className="space-y-3">
-                    {impulses.map((imp) => {
-                      const user = imp.users || { first_name: 'Ghost' };
-                      return (
-                        <button 
-                          key={imp.id} 
-                          onClick={() => setSelectedImpulse(imp)}
-                          className={clsx(
-                            "w-full glass-panel p-4 rounded-[30px] flex items-center gap-4 active:scale-[0.98] transition-all text-left",
-                            user.is_premium && "border-yellow-500/30 shadow-[0_0_15px_rgba(234,179,8,0.1)]"
-                          )}
-                        >
-                          <div className="w-14 h-14 rounded-full border-2 border-primary/20 p-0.5 shrink-0 relative">
-                            <img src={user.avatar_url || 'https://i.pravatar.cc/150'} className="w-full h-full rounded-full object-cover" alt="" />
-                            {user.is_premium && <div className="absolute -top-1 -right-1 bg-black rounded-full p-1 border border-yellow-500"><Star size={10} className="text-yellow-400 fill-yellow-400" /></div>}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex justify-between items-center mb-1">
-                              <p className={clsx("font-bold text-base", user.is_premium ? "text-yellow-400" : "text-white")}>{user.first_name}</p>
-                              <span className="text-[10px] font-black text-primary uppercase">~500м</span>
-                            </div>
-                            <p className="text-white/60 text-sm line-clamp-1 font-medium">{imp.message}</p>
+                // --- СПИСОК ИМПУЛЬСОВ (SOCIAL) ---
+                <>
+                  <section className="mb-10">
+                    <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mb-5 ml-1">Категории</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      {CATEGORIES.map((cat) => (
+                        <button key={cat.id} className="glass-panel p-5 rounded-[32px] flex flex-col items-start gap-4 active:scale-[0.97] transition-all">
+                          <div className={clsx("p-3 rounded-2xl text-white", cat.color)}><cat.icon size={22} /></div>
+                          <div>
+                            <p className="font-bold text-white text-[17px] leading-none">{cat.label}</p>
+                            <p className="text-[10px] text-white/30 font-black uppercase mt-1">Доступно</p>
                           </div>
                         </button>
-                      );
-                    })}
-                  </div>
-                </section>
+                      ))}
+                    </div>
+                  </section>
+
+                  <section>
+                    <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mb-6 ml-1">Актуально сейчас</h3>
+                    <div className="space-y-3">
+                      {impulses.length === 0 && (
+                        <p className="text-white/30 text-center py-4 text-sm">Пока нет активных импульсов...</p>
+                      )}
+                      {impulses.map((imp) => {
+                        const user = imp.users || { first_name: 'Ghost' };
+                        return (
+                          <button 
+                            key={imp.id} 
+                            onClick={() => setSelectedImpulse(imp)}
+                            className={clsx(
+                              "w-full glass-panel p-4 rounded-[30px] flex items-center gap-4 active:scale-[0.98] transition-all text-left",
+                              user.is_premium && "border-yellow-500/30 shadow-[0_0_15px_rgba(234,179,8,0.1)]"
+                            )}
+                          >
+                            <div className="w-14 h-14 rounded-full border-2 border-primary/20 p-0.5 shrink-0 relative">
+                              <img src={user.avatar_url || 'https://i.pravatar.cc/150'} className="w-full h-full rounded-full object-cover" alt="" />
+                              {user.is_premium && <div className="absolute -top-1 -right-1 bg-black rounded-full p-1 border border-yellow-500"><Star size={10} className="text-yellow-400 fill-yellow-400" /></div>}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex justify-between items-center mb-1">
+                                <p className={clsx("font-bold text-base", user.is_premium ? "text-yellow-400" : "text-white")}>{user.first_name}</p>
+                                <span className="text-[10px] font-black text-primary uppercase">~500м</span>
+                              </div>
+                              <p className="text-white/60 text-sm line-clamp-1 font-medium">{imp.message}</p>
+                              {imp.venues && (
+                                <div className="flex items-center gap-1 text-[10px] text-white/30 font-black uppercase mt-1">
+                                  <MapPin size={10} className="text-primary" /> {imp.venues.name}
+                                </div>
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </section>
+                </>
               )}
             </motion.div>
           </div>
