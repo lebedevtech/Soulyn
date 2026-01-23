@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import clsx from 'clsx';
 
-// КОПИЯ АНИМАЦИИ ИЗ MAP PAGE (для консистентности)
+// PREMIUM BLUR ANIMATION (Синхронизировано с MapPage)
 const listContainerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -16,12 +16,13 @@ const listContainerVariants = {
 };
 
 const itemVariants = {
-  hidden: { y: 15, opacity: 0, scale: 0.98 },
+  hidden: { y: 10, opacity: 0, filter: 'blur(5px)', scale: 0.98 },
   visible: { 
     y: 0, 
     opacity: 1, 
+    filter: 'blur(0px)',
     scale: 1,
-    transition: { type: "spring", stiffness: 400, damping: 30, mass: 1 } 
+    transition: { duration: 0.5, ease: [0.25, 0.4, 0.25, 1] } 
   }
 };
 
@@ -62,8 +63,8 @@ export default function ChatPage() {
   }
 
   return (
-    // FIX: Увеличили отступ до pt-28 (112px) - теперь точно не наедет на кнопки TG
-    <div className="w-full h-full bg-black flex flex-col pt-28 px-6">
+    // FIX: pt-20 = 80px (идеально для заголовка, как в Уведомлениях)
+    <div className="w-full h-full bg-black flex flex-col pt-20 px-6">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-black text-white tracking-tight">Чаты</h1>
         <div className="p-3 bg-white/5 rounded-full border border-white/5">
@@ -82,7 +83,7 @@ export default function ChatPage() {
           </div>
         ) : (
           <motion.div 
-            className="space-y-2 transform-gpu" // GPU ускорение
+            className="space-y-2 transform-gpu"
             variants={listContainerVariants}
             initial="hidden"
             animate="visible"
