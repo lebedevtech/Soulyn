@@ -6,40 +6,21 @@ import {
 import { useAuth } from '../context/AuthContext';
 import clsx from 'clsx';
 
-const TRANSITION_EASE = [0.25, 0.1, 0.25, 1];
-
 export default function ProfilePage() {
   const { user, signOut } = useAuth();
 
   return (
     <div className="relative w-full h-full bg-black flex flex-col overflow-y-auto no-scrollbar">
       
-      {/* HEADER: Такой же дизайн, как в ChatDetailPage (pt-24 + центровка) */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-white/5 pt-24 pb-4 px-4">
-        <div className="relative flex items-center h-10">
-          
-          {/* Центрированный заголовок */}
-          <h1 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[17px] font-bold text-white tracking-tight">
-            Профиль
-          </h1>
-
-          {/* Кнопки действий справа */}
-          <div className="ml-auto flex gap-2 z-20">
-            <button className="p-2 text-white/50 hover:text-white transition-colors">
-              <Settings size={22} />
-            </button>
-            <button 
-              onClick={signOut}
-              className="p-2 text-red-500/60 hover:text-red-500 transition-colors"
-            >
-              <LogOut size={22} />
-            </button>
-          </div>
-        </div>
+      {/* HEADER: Единообразный с Чатами и Уведомлениями */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-white/5 pt-20 pb-4 text-center">
+        <h1 className="text-[15px] font-bold text-white tracking-widest uppercase">
+          Профиль
+        </h1>
       </div>
 
-      {/* CONTENT: Добавлен отступ сверху pt-40, чтобы контент не скрывался под хедером */}
-      <div className="flex-1 pt-40 pb-32">
+      {/* CONTENT: pt-44 для компенсации хедера */}
+      <div className="flex-1 pt-44 pb-32">
         
         {/* User Card */}
         <div className="px-6 mb-8">
@@ -94,9 +75,12 @@ export default function ProfilePage() {
                 { icon: User, label: 'Личные данные', color: 'text-blue-400' },
                 { icon: Bell, label: 'Уведомления', color: 'text-orange-400' },
                 { icon: Shield, label: 'Приватность', color: 'text-green-400' },
+                { icon: Settings, label: 'Настройки', color: 'text-purple-400' },
+                { icon: LogOut, label: 'Выйти из аккаунта', color: 'text-red-500', action: signOut },
               ].map((item, i, arr) => (
                 <button 
                   key={i} 
+                  onClick={item.action}
                   className={clsx(
                     "w-full px-5 py-4 flex items-center justify-between active:bg-white/5 transition-colors",
                     i !== arr.length - 1 && "border-b border-white/5"
@@ -106,7 +90,9 @@ export default function ProfilePage() {
                     <div className={clsx("p-2 rounded-xl bg-white/5", item.color)}>
                       <item.icon size={18} />
                     </div>
-                    <span className="font-bold text-white/80">{item.label}</span>
+                    <span className={clsx("font-bold", item.color === 'text-red-500' ? "text-red-500" : "text-white/80")}>
+                      {item.label}
+                    </span>
                   </div>
                   <ChevronRight size={18} className="text-white/10" />
                 </button>
