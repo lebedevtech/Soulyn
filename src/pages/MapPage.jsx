@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import MapView from '../features/map/MapView';
 import ImpulseSheet from '../features/map/ImpulseSheet';
-import VenueSheet from '../features/map/VenueSheet'; // Импорт новой шторки
+import VenueSheet from '../features/map/VenueSheet';
 import { 
   LayoutGrid, 
   Map as MapIcon, 
@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import clsx from 'clsx';
 
-// ПЕРЕКЛЮЧАТЕЛЬ (Компактный, в виде пилюли)
+// ПЕРЕКЛЮЧАТЕЛЬ
 const MapToggle = ({ mode, setMode }) => (
   <div className="flex flex-col gap-3 pointer-events-auto">
     <button
@@ -39,33 +39,47 @@ const MapToggle = ({ mode, setMode }) => (
   </div>
 );
 
-export default function MapPage() {
-  const [viewMode, setViewMode] = useState('map'); // 'map' | 'list'
-  const [mapLayer, setMapLayer] = useState('social'); // 'social' | 'places'
+export default function MapPage({ onOpenCreate }) {
+  const [viewMode, setViewMode] = useState('map'); 
+  const [mapLayer, setMapLayer] = useState('social');
   
   const [selectedImpulse, setSelectedImpulse] = useState(null);
-  const [selectedVenue, setSelectedVenue] = useState(null); // Состояние для выбранного места
+  const [selectedVenue, setSelectedVenue] = useState(null);
   
   const [impulses, setImpulses] = useState([]);
   const [venues, setVenues] = useState([]);
+  
+  // Состояние для координат пользователя
+  const [userLocation, setUserLocation] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
-      // 1. Загрузка импульсов
       const { data: impData } = await supabase
         .from('impulses')
         .select(`*, users (*), venues (name)`)
         .order('created_at', { ascending: false });
       if (impData) setImpulses(impData);
 
-      // 2. Загрузка заведений
       const { data: venueData } = await supabase.from('venues').select('*');
       if (venueData) setVenues(venueData);
     };
 
     fetchData();
 
-    // 3. Подписка на Realtime
+    // ЗАПРОС GPS
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setUserLocation([latitude, longitude]);
+        },
+        (error) => {
+          console.error("Ошибка GPS:", error);
+          // Можно поставить дефолт, но лучше оставить null, карта сама встанет на Москву
+        }
+      );
+    }
+
     const channel = supabase
       .channel('public:impulses')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'impulses' }, async (payload) => {
@@ -84,40 +98,41 @@ export default function MapPage() {
   return (
     <div className="relative w-full h-full bg-black overflow-hidden">
       
-      {/* 1. ЛОГОТИП (ПО ЦЕНТРУ СВЕРХУ) */}
+      {/* 1. ЛОГОТИП */}
       <div className="absolute top-14 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center pointer-events-none">
         <h1 className="text-xl font-black text-white tracking-tighter drop-shadow-2xl leading-none">Soulyn</h1>
         <div className="flex items-center gap-1.5 mt-1">
           <span className="w-1 h-1 bg-primary rounded-full animate-pulse shadow-[0_0_10px_rgba(139,92,246,1)]" />
-          <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-white/50">Москва</span>
+          <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-white/50">
+            {userLocation ? 'GPS ACTIVE' : 'Москва'}
+          </span>
         </div>
       </div>
 
-      {/* 2. ПЕРЕКЛЮЧАТЕЛЬ СЛОЕВ (СЛЕВА СНИЗУ) */}
+      {/* 2. ПЕРЕКЛЮЧАТЕЛЬ СЛОЕВ */}
       <div className="absolute bottom-32 left-4 z-30">
         <MapToggle mode={mapLayer} setMode={setMapLayer} />
       </div>
 
-      {/* 3. КАРТА */}
+      {/* 3. КАРТА (Передаем userLocation) */}
       <div className="absolute inset-0 z-0">
         <MapView 
           impulses={impulses} 
           venues={venues} 
-          mode={mapLayer} 
+          mode={mapLayer}
+          userLocation={userLocation} // <-- Передали координаты
           onImpulseClick={setSelectedImpulse} 
-          onVenueClick={(venue) => setSelectedVenue(venue)} // Открываем шторку места
+          onVenueClick={(venue) => setSelectedVenue(venue)} 
         />
       </div>
 
-      {/* 4. КНОПКИ ВИДА (СПРАВА СНИЗУ) */}
+      {/* 4. КНОПКИ ВИДА */}
       <div className="absolute bottom-32 right-4 z-30 flex flex-col gap-3 pointer-events-auto">
         <button 
           onClick={() => setViewMode('map')} 
           className={clsx(
             "w-12 h-12 rounded-2xl flex items-center justify-center backdrop-blur-xl border transition-all shadow-xl active:scale-90",
-            viewMode === 'map' 
-              ? "bg-white text-black border-white" 
-              : "bg-black/40 text-white/50 border-white/10"
+            viewMode === 'map' ? "bg-white text-black border-white" : "bg-black/40 text-white/50 border-white/10"
           )}
         >
           <MapIcon size={20} />
@@ -126,16 +141,14 @@ export default function MapPage() {
           onClick={() => setViewMode('list')} 
           className={clsx(
             "w-12 h-12 rounded-2xl flex items-center justify-center backdrop-blur-xl border transition-all shadow-xl active:scale-90",
-            viewMode === 'list' 
-              ? "bg-white text-black border-white" 
-              : "bg-black/40 text-white/50 border-white/10"
+            viewMode === 'list' ? "bg-white text-black border-white" : "bg-black/40 text-white/50 border-white/10"
           )}
         >
           <LayoutGrid size={20} />
         </button>
       </div>
 
-      {/* 5. СПИСОК (List View) */}
+      {/* 5. СПИСОК */}
       <AnimatePresence>
         {viewMode === 'list' && (
           <div className="absolute inset-0 z-10">
@@ -151,7 +164,6 @@ export default function MapPage() {
                    <h3 className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] mb-6 ml-1">Лучшие места</h3>
                    <div className="space-y-4">
                      {venues.map(venue => (
-                       // Клик по карточке списка тоже открывает шторку
                        <button 
                          key={venue.id} 
                          onClick={() => setSelectedVenue(venue)}
@@ -204,16 +216,15 @@ export default function MapPage() {
         )}
       </AnimatePresence>
 
-      {/* ШТОРКА ИМПУЛЬСА (Social) */}
       <ImpulseSheet impulse={selectedImpulse} onClose={() => setSelectedImpulse(null)} />
       
-      {/* ШТОРКА ЗАВЕДЕНИЯ (Places) */}
       <VenueSheet 
         venue={selectedVenue} 
         onClose={() => setSelectedVenue(null)}
         onCreateImpulse={(venue) => {
           setSelectedVenue(null);
-          alert(`Скоро: Создание импульса в ${venue.name}`);
+          // Передаем также координаты юзера, если есть
+          onOpenCreate({ venue, location: userLocation }); 
         }} 
       />
     </div>

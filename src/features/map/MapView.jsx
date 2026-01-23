@@ -1,28 +1,53 @@
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { Navigation } from 'lucide-react';
 import clsx from 'clsx';
 
-// Компонент для обновления центра карты при смене координат
-function ChangeView({ center }) {
+// Компонент для управления камерой
+function MapController({ center, userLocation, followUser }) {
   const map = useMap();
+
   useEffect(() => {
-    map.setView(center, map.getZoom());
-  }, [center, map]);
+    // Если включен режим слежения и есть координаты юзера - летим к нему
+    if (followUser && userLocation) {
+      map.flyTo(userLocation, 15, { duration: 2 });
+    } 
+    // Иначе просто центрируем (например при старте)
+    else if (center) {
+      map.setView(center, map.getZoom());
+    }
+  }, [center, userLocation, followUser, map]);
+
   return null;
 }
 
 export default function MapView({ 
   impulses = [], 
   venues = [], 
-  mode = 'social', // 'social' или 'places'
+  mode = 'social', 
+  userLocation, // НОВЫЙ ПРОПС: Координаты юзера [lat, lng]
   onImpulseClick, 
   onVenueClick 
 }) {
-  const defaultCenter = [55.7558, 37.6173]; // Москва
+  const defaultCenter = [55.7558, 37.6173]; // Москва (фолбек)
+  const [followUser, setFollowUser] = useState(true); // Следить ли за юзером при старте
 
-  // Генератор иконок для ЛЮДЕЙ (Круглые)
+  // Иконка "Я" (Пульсирующая точка)
+  const myLocationIcon = L.divIcon({
+    className: 'my-location-marker',
+    html: `
+      <div class="relative flex h-6 w-6">
+        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-500 opacity-75"></span>
+        <span class="relative inline-flex rounded-full h-6 w-6 bg-blue-500 border-2 border-white shadow-lg"></span>
+      </div>
+    `,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+  });
+
+  // Иконка для ЛЮДЕЙ
   const createSocialIcon = (url, isPremium) => {
     return L.divIcon({
       className: 'custom-marker',
@@ -42,7 +67,7 @@ export default function MapView({
     });
   };
 
-  // Генератор иконок для ЗАВЕДЕНИЙ (Квадратные с логотипом)
+  // Иконка для ЗАВЕДЕНИЙ
   const createVenueIcon = (url, isPartner) => {
     return L.divIcon({
       className: 'custom-marker',
@@ -65,45 +90,65 @@ export default function MapView({
   };
 
   return (
-    <MapContainer 
-      center={defaultCenter} 
-      zoom={14} 
-      className="w-full h-full z-0 bg-[#050505]" // Темный фон пока не загрузится плитка
-      zoomControl={false}
-    >
-      <ChangeView center={defaultCenter} />
-      
-      {/* ТЕМНАЯ КАРТА (CartoDB DarkMatter) */}
-      <TileLayer
-        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-        subdomains='abcd'
-        maxZoom={20}
-      />
-
-      {/* СЛОЙ SOCIAL (Люди) */}
-      {mode === 'social' && impulses.map((imp) => {
-        if (!imp.users) return null;
-        return (
-          <Marker 
-            key={imp.id} 
-            position={[imp.lat, imp.lng]} 
-            icon={createSocialIcon(imp.users.avatar_url, imp.users.is_premium)}
-            eventHandlers={{ click: () => onImpulseClick(imp) }}
-          />
-        );
-      })}
-
-      {/* СЛОЙ PLACES (Заведения) */}
-      {mode === 'places' && venues.map((venue) => (
-        <Marker 
-          key={venue.id} 
-          position={[venue.lat, venue.lng]} 
-          icon={createVenueIcon(venue.image_url, venue.is_partner)}
-          eventHandlers={{ click: () => onVenueClick(venue) }}
+    <div className="relative w-full h-full">
+      <MapContainer 
+        center={defaultCenter} 
+        zoom={14} 
+        className="w-full h-full z-0 bg-[#050505]"
+        zoomControl={false}
+      >
+        <MapController 
+          center={defaultCenter} 
+          userLocation={userLocation} 
+          followUser={followUser}
         />
-      ))}
+        
+        <TileLayer
+          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          attribution='&copy; CARTO'
+          maxZoom={20}
+        />
 
-    </MapContainer>
+        {/* Маркер пользователя (Я) */}
+        {userLocation && (
+          <Marker position={userLocation} icon={myLocationIcon} zIndexOffset={1000} />
+        )}
+
+        {/* СЛОЙ SOCIAL */}
+        {mode === 'social' && impulses.map((imp) => {
+          if (!imp.users) return null;
+          return (
+            <Marker 
+              key={imp.id} 
+              position={[imp.lat, imp.lng]} 
+              icon={createSocialIcon(imp.users.avatar_url, imp.users.is_premium)}
+              eventHandlers={{ click: () => { setFollowUser(false); onImpulseClick(imp); } }}
+            />
+          );
+        })}
+
+        {/* СЛОЙ PLACES */}
+        {mode === 'places' && venues.map((venue) => (
+          <Marker 
+            key={venue.id} 
+            position={[venue.lat, venue.lng]} 
+            icon={createVenueIcon(venue.image_url, venue.is_partner)}
+            eventHandlers={{ click: () => { setFollowUser(false); onVenueClick(venue); } }}
+          />
+        ))}
+
+      </MapContainer>
+
+      {/* КНОПКА "ГДЕ Я" (Плавающая) */}
+      <button 
+        onClick={() => setFollowUser(true)}
+        className={clsx(
+          "absolute top-44 right-4 z-[400] p-3 rounded-2xl backdrop-blur-xl border transition-all shadow-xl active:scale-90",
+          followUser ? "bg-blue-500 text-white border-blue-400" : "bg-black/40 text-white/50 border-white/10"
+        )}
+      >
+        <Navigation size={20} fill={followUser ? "currentColor" : "none"} />
+      </button>
+    </div>
   );
 }

@@ -2,16 +2,14 @@ import { useEffect, useState } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import WebApp from '@twa-dev/sdk'; 
-import { AuthProvider } from './context/AuthContext'; // Импорт провайдера
+import { AuthProvider } from './context/AuthContext';
 
-// Страницы
 import MapPage from './pages/MapPage';
 import ChatPage from './pages/ChatPage'; 
 import ChatDetailPage from './pages/ChatDetailPage'; 
 import NotificationsPage from './pages/NotificationsPage';
 import ProfilePage from './pages/ProfilePage';
 
-// Компоненты
 import BottomNav from './components/layout/BottomNav';
 import CreateImpulseSheet from './features/map/CreateImpulseSheet';
 
@@ -20,7 +18,10 @@ export default function App() {
   const isDetailChat = location.pathname.startsWith('/chat/');
   
   const [isInTelegram, setIsInTelegram] = useState(false);
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  
+  // Обновили состояние: теперь это не просто true/false, а объект или null
+  // Если null - закрыто. Если объект - открыто с данными.
+  const [createData, setCreateData] = useState(null); 
 
   useEffect(() => {
     if (WebApp.initData) {
@@ -38,8 +39,12 @@ export default function App() {
     ? "fixed inset-0 w-full h-full bg-black overflow-hidden" 
     : "phone-frame overflow-hidden m-10"; 
 
+  // Функция открытия шторки (можно передать venue)
+  const openCreateSheet = (initialData = {}) => {
+    setCreateData(initialData); 
+  };
+
   return (
-    // ОБОРАЧИВАЕМ ВСЁ В AUTH PROVIDER
     <AuthProvider>
       <div className={wrapperClass}>
         {!isInTelegram && (
@@ -49,7 +54,8 @@ export default function App() {
         <div className="relative w-full h-full bg-black overflow-hidden">
           <AnimatePresence mode="wait" initial={false}>
             <Routes location={location} key={location.pathname}>
-              <Route path="/" element={<MapPage />} />
+              {/* Передаем функцию открытия внутрь MapPage */}
+              <Route path="/" element={<MapPage onOpenCreate={openCreateSheet} />} />
               <Route path="/chats" element={<ChatPage />} />
               <Route path="/chat/:id" element={<ChatDetailPage />} />
               <Route path="/notifications" element={<NotificationsPage />} />
@@ -57,14 +63,17 @@ export default function App() {
             </Routes>
           </AnimatePresence>
 
+          {/* Передаем данные в шторку */}
           <CreateImpulseSheet 
-            isOpen={isCreateOpen} 
-            onClose={() => setIsCreateOpen(false)} 
+            isOpen={!!createData} // Открыто, если данные не null
+            initialData={createData || {}} // Передаем данные (например, ресторан)
+            onClose={() => setCreateData(null)} 
           />
         </div>
         
         {!isDetailChat && (
-          <BottomNav onCreateClick={() => setIsCreateOpen(true)} />
+          // Обычное открытие (без привязки к месту)
+          <BottomNav onCreateClick={() => openCreateSheet({})} />
         )}
       </div>
     </AuthProvider>
