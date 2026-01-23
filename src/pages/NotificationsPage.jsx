@@ -27,21 +27,9 @@ export default function NotificationsPage() {
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
-      // 1. Запросы на мэтч (pending)
-      const { data: requests } = await supabase
-        .from('matches')
-        .select(`id, status, created_at, requester:requester_id(id, first_name, avatar_url), impulse:impulse_id(message)`)
-        .eq('initiator_id', user.id)
-        .eq('status', 'pending');
+      const { data: requests } = await supabase.from('matches').select(`id, status, created_at, requester:requester_id(id, first_name, avatar_url), impulse:impulse_id(message)`).eq('initiator_id', user.id).eq('status', 'pending');
+      const { data: messages } = await supabase.from('messages').select(`id, content, created_at, match_id, match:match_id (initiator:initiator_id(id, first_name, avatar_url), requester:requester_id(id, first_name, avatar_url))`).eq('is_read', false).neq('sender_id', user.id);
 
-      // 2. Непрочитанные сообщения (новые)
-      const { data: messages } = await supabase
-        .from('messages')
-        .select(`id, content, created_at, match_id, match:match_id (initiator:initiator_id(id, first_name, avatar_url), requester:requester_id(id, first_name, avatar_url))`)
-        .eq('is_read', false)
-        .neq('sender_id', user.id);
-
-      // Форматируем
       const formattedRequests = (requests || []).map(r => ({
         type: 'request', id: r.id, date: new Date(r.created_at), user: r.requester,
         text: `хочет встретиться: "${r.impulse?.message}"`
@@ -56,18 +44,13 @@ export default function NotificationsPage() {
         };
       });
 
-      // Сливаем и сортируем
       const allItems = [...formattedRequests, ...formattedMessages].sort((a, b) => b.date - a.date);
       setItems(allItems);
       setLoading(false);
     };
 
     fetchData();
-    const channel = supabase.channel('notifications')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, fetchData)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, fetchData)
-      .subscribe();
-
+    const channel = supabase.channel('notifications').on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, fetchData).on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, fetchData).subscribe();
     return () => supabase.removeChannel(channel);
   }, [user]);
 
@@ -83,17 +66,18 @@ export default function NotificationsPage() {
   };
 
   return (
-    <div className="relative w-full h-full bg-black flex flex-col">
-      {/* HEADER: SAFE AREA */}
-      <div className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md border-b border-white/5 pt-16 pb-4">
+    <div className="w-full h-full bg-black flex flex-col overflow-hidden">
+      
+      {/* 1. STATUS SPACER */}
+      <div className="w-full h-6 shrink-0 bg-black" />
+
+      {/* 2. HEADER */}
+      <div className="w-full h-12 shrink-0 flex items-center justify-center bg-black border-b border-white/5 z-20">
         <span className="text-[17px] font-bold text-white tracking-tight">Уведомления</span>
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 h-32 z-10 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none" />
-
-      {/* Content: pt-40 */}
-      <div className="flex-1 overflow-y-auto no-scrollbar pt-40 pb-32 px-4 relative z-0">
-        
+      {/* 3. CONTENT */}
+      <div className="flex-1 overflow-y-auto no-scrollbar p-4 pb-32">
         {loading ? (
            <div className="text-center text-white/30 mt-10">...</div>
         ) : items.length === 0 ? (
@@ -104,11 +88,7 @@ export default function NotificationsPage() {
         ) : (
           <motion.div className="space-y-3" variants={listContainerVariants} initial="hidden" animate="visible">
             {items.map((item) => (
-              <motion.div
-                key={`${item.type}-${item.id}`}
-                variants={itemVariants}
-                className="w-full p-4 rounded-[24px] bg-[#1C1C1E] border border-white/10 flex flex-col gap-3"
-              >
+              <motion.div key={`${item.type}-${item.id}`} variants={itemVariants} className="w-full p-4 rounded-[24px] bg-[#1C1C1E] border border-white/10 flex flex-col gap-3">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-white/10 overflow-hidden relative">
                     <img src={item.user?.avatar_url || 'https://i.pravatar.cc/150'} className="w-full h-full object-cover" alt=""/>

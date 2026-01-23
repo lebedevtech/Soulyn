@@ -30,15 +30,9 @@ export default function ChatPage() {
     if (!user) return;
     
     const fetchChats = async () => {
-      // 1. Принятые матчи
       const { data: matches } = await supabase
         .from('matches')
-        .select(`
-          id, status, 
-          initiator:initiator_id(id, first_name, avatar_url), 
-          requester:requester_id(id, first_name, avatar_url), 
-          impulse:impulse_id(message)
-        `)
+        .select(`id, status, initiator:initiator_id(id, first_name, avatar_url), requester:requester_id(id, first_name, avatar_url), impulse:impulse_id(message)`)
         .or(`initiator_id.eq.${user.id},requester_id.eq.${user.id}`)
         .eq('status', 'accepted');
 
@@ -49,30 +43,16 @@ export default function ChatPage() {
       }
 
       const matchIds = matches.map(m => m.id);
+      const { data: messages } = await supabase.from('messages').select('*').in('match_id', matchIds).order('created_at', { ascending: true });
 
-      // 2. Сообщения
-      const { data: messages } = await supabase
-        .from('messages')
-        .select('*')
-        .in('match_id', matchIds)
-        .order('created_at', { ascending: true });
-
-      // 3. Сборка
       const processedChats = matches.map(match => {
         const partner = match.initiator.id === user.id ? match.requester : match.initiator;
         const chatMessages = messages?.filter(m => m.match_id === match.id) || [];
         const lastMessage = chatMessages[chatMessages.length - 1];
-        
-        // Считаем непрочитанные
-        const unreadCount = chatMessages.filter(
-          m => m.sender_id !== user.id && m.is_read === false
-        ).length;
+        const unreadCount = chatMessages.filter(m => m.sender_id !== user.id && m.is_read === false).length;
 
         return {
-          ...match,
-          partner,
-          lastMessage,
-          unreadCount,
+          ...match, partner, lastMessage, unreadCount,
           lastActivity: lastMessage ? new Date(lastMessage.created_at) : new Date(match.created_at || 0)
         };
       });
@@ -94,16 +74,18 @@ export default function ChatPage() {
   });
 
   return (
-    <div className="relative w-full h-full bg-black flex flex-col">
-      {/* HEADER: HARDCODED SAFE AREA */}
-      <div className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md border-b border-white/5 pt-16 pb-4">
+    <div className="w-full h-full bg-black flex flex-col overflow-hidden">
+      
+      {/* 1. STATUS SPACER */}
+      <div className="w-full h-6 shrink-0 bg-black" />
+
+      {/* 2. HEADER */}
+      <div className="w-full h-12 shrink-0 flex items-center justify-center bg-black border-b border-white/5 z-20">
         <span className="text-[17px] font-bold text-white tracking-tight">Чаты</span>
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 h-32 z-10 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none" />
-
-      {/* Content: Padded Top */}
-      <div className="flex-1 overflow-y-auto no-scrollbar pt-40 pb-32 px-4 relative z-0">
+      {/* 3. SCROLLABLE CONTENT */}
+      <div className="flex-1 overflow-y-auto no-scrollbar p-4 pb-32">
         
         <div className="mb-6 relative">
           <div className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30">
@@ -133,7 +115,6 @@ export default function ChatPage() {
               >
                 <div className="relative">
                   <img src={chat.partner?.avatar_url || 'https://i.pravatar.cc/150'} className="w-14 h-14 rounded-full object-cover border border-white/10" alt=""/>
-                  {/* UNREAD INDICATOR */}
                   {chat.unreadCount > 0 && (
                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full border-2 border-[#121212] flex items-center justify-center">
                         <div className="w-1.5 h-1.5 bg-white rounded-full" />
@@ -156,7 +137,6 @@ export default function ChatPage() {
                         : <span className="text-primary italic">Новый мэтч!</span>
                       }
                     </p>
-                    
                     {chat.unreadCount > 0 && (
                       <div className="min-w-[20px] h-5 px-1.5 bg-primary rounded-full flex items-center justify-center">
                         <span className="text-[10px] font-bold text-white">{chat.unreadCount}</span>

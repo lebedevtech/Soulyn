@@ -27,7 +27,7 @@ export default function ChatDetailPage() {
   const [showMenu, setShowMenu] = useState(false);
   const bottomRef = useRef(null);
 
-  // 1. Помечаем прочитанным при входе
+  // Mark as Read
   const markAsRead = async () => {
     if (!user || !id) return;
     await supabase.from('messages')
@@ -41,7 +41,6 @@ export default function ChatDetailPage() {
     if (!user || !id) return;
 
     const fetchChatData = async () => {
-      // Загрузка партнера
       const { data: match } = await supabase
         .from('matches')
         .select(`initiator:initiator_id(id, first_name, avatar_url), requester:requester_id(id, first_name, avatar_url)`)
@@ -53,7 +52,6 @@ export default function ChatDetailPage() {
         setPartner(partnerData);
       }
 
-      // Загрузка сообщений
       const { data: msgs } = await supabase
         .from('messages')
         .select('*')
@@ -62,24 +60,19 @@ export default function ChatDetailPage() {
 
       if (msgs) {
         setMessages(msgs);
-        markAsRead(); // <--- Сразу читаем
+        markAsRead();
       }
     };
 
     fetchChatData();
 
-    // Подписка
     const channel = supabase.channel(`chat:${id}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `match_id=eq.${id}` }, (payload) => {
         setMessages((prev) => {
            if (prev.some(m => m.id === payload.new.id)) return prev;
            return [...prev, payload.new];
         });
-        
-        // Если сообщение от партнера и мы в чате — сразу читаем
-        if (payload.new.sender_id !== user.id) {
-            markAsRead();
-        }
+        if (payload.new.sender_id !== user.id) markAsRead();
       })
       .subscribe();
 
@@ -107,7 +100,7 @@ export default function ChatDetailPage() {
     }]).select().single();
 
     if (error) {
-        console.error('Ошибка:', error);
+        console.error('Error:', error);
         setMessages(prev => prev.filter(m => m.id !== tempId));
         setNewMessage(content); 
     } else if (data) {
@@ -115,45 +108,42 @@ export default function ChatDetailPage() {
     }
   };
 
-  // Удаление чата
   const handleDeleteChat = async () => {
-    if (!window.confirm('Удалить переписку?')) return;
-    
-    // Удаляем сообщения (если в базе нет cascade delete)
+    if (!window.confirm('Удалить чат?')) return;
     await supabase.from('messages').delete().eq('match_id', id);
-    // Удаляем сам матч
     await supabase.from('matches').delete().eq('id', id);
-    
     navigate('/chats');
   };
 
   return (
-    <div className="w-full h-full bg-black flex flex-col relative">
+    // NEW ARCHITECTURE: Flex Column
+    <div className="w-full h-full bg-black flex flex-col overflow-hidden">
       
-      {/* HEADER: FIXED + HARDCODED PADDING */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-xl border-b border-white/5 pt-14 pb-3">
-        <div className="relative w-full h-10 flex items-center px-4">
-          
-          {/* Back Button */}
-          <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-white active:opacity-50 z-20 relative">
-            <ArrowLeft size={24} />
-          </button>
-          
-          {/* CENTERED NAME: Absolute positioning for perfect center */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center pointer-events-none z-10">
-            <span className="font-bold text-white text-[17px] leading-tight">{partner?.first_name || '...'}</span>
-            <span className="text-[10px] text-green-500 font-bold tracking-wide">ONLINE</span>
-          </div>
-          
-          {/* RIGHT ACTIONS: Margin Right to avoid Telegram Menu */}
-          <div className="ml-auto flex gap-1 z-20 relative mr-10"> 
-             <button className="p-2 text-white/40 hover:text-white transition-colors"><Phone size={20} /></button>
-             <button onClick={() => setShowMenu(!showMenu)} className="p-2 text-white/40 hover:text-white transition-colors"><MoreVertical size={20} /></button>
-          </div>
+      {/* 1. STATUS BAR SPACER (Hardcoded Safety) */}
+      <div className="w-full h-6 shrink-0 bg-black" />
+
+      {/* 2. HEADER (Static Block, not fixed) */}
+      <div className="w-full h-14 shrink-0 flex items-center relative bg-black border-b border-white/5 px-4 z-30">
+        
+        {/* Left */}
+        <button onClick={() => navigate(-1)} className="absolute left-2 p-2 text-white active:opacity-50 z-20">
+          <ArrowLeft size={24} />
+        </button>
+
+        {/* Center Title (Absolute to ensure perfect centering) */}
+        <div className="w-full flex flex-col items-center justify-center pointer-events-none">
+          <span className="font-bold text-white text-[17px] leading-tight">{partner?.first_name || '...'}</span>
+          <span className="text-[10px] text-green-500 font-bold tracking-wide">ONLINE</span>
+        </div>
+
+        {/* Right Actions (Padding right to avoid TG menu) */}
+        <div className="absolute right-4 flex gap-1 z-20 pr-8"> 
+           <button className="p-2 text-white/40 hover:text-white"><Phone size={20} /></button>
+           <button onClick={() => setShowMenu(!showMenu)} className="p-2 text-white/40 hover:text-white"><MoreVertical size={20} /></button>
         </div>
       </div>
 
-      {/* Dropdown Menu */}
+      {/* Dropdown Menu (Fixed above content) */}
       <AnimatePresence>
         {showMenu && (
           <>
@@ -162,12 +152,9 @@ export default function ChatDetailPage() {
               initial={{ opacity: 0, scale: 0.9, y: -10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: -10 }}
-              className="fixed top-24 right-16 z-50 bg-[#1C1C1E] border border-white/10 rounded-xl shadow-2xl overflow-hidden min-w-[160px]"
+              className="absolute top-24 right-12 z-50 bg-[#1C1C1E] border border-white/10 rounded-xl shadow-2xl overflow-hidden min-w-[160px]"
             >
-              <button 
-                onClick={handleDeleteChat}
-                className="w-full p-4 flex items-center gap-3 text-red-500 hover:bg-white/5 text-sm font-bold active:bg-white/10"
-              >
+              <button onClick={handleDeleteChat} className="w-full p-4 flex items-center gap-3 text-red-500 hover:bg-white/5 text-sm font-bold">
                 <Trash2 size={18} /> Удалить чат
               </button>
             </motion.div>
@@ -175,10 +162,9 @@ export default function ChatDetailPage() {
         )}
       </AnimatePresence>
 
-      {/* Messages: Отступ сверху pt-36, чтобы компенсировать Fixed Header */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 pt-36 pb-32">
-        {messages.length === 0 && partner && <p className="text-center text-white/30 text-sm mt-10">Нет сообщений</p>}
-        
+      {/* 3. CONTENT (Flex-1 takes remaining space) */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-black">
+        {messages.length === 0 && partner && <p className="text-center text-white/30 text-sm mt-10">Начните общение...</p>}
         {messages.map((msg) => {
           const isMe = msg.sender_id === user?.id;
           return (
@@ -204,8 +190,8 @@ export default function ChatDetailPage() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
-      <div className="fixed bottom-0 left-0 right-0 bg-black border-t border-white/10 p-4 pb-8 z-50">
+      {/* 4. FOOTER (Static Block, not fixed) */}
+      <div className="shrink-0 bg-black border-t border-white/10 p-4 pb-8 z-30">
         <div className="flex gap-2 items-center bg-[#1C1C1E] rounded-full p-2 pl-4">
           <input 
             value={newMessage}
@@ -223,6 +209,7 @@ export default function ChatDetailPage() {
           </motion.button>
         </div>
       </div>
+
     </div>
   );
 }
