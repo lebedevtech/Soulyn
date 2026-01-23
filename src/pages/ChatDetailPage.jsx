@@ -30,7 +30,7 @@ export default function ChatDetailPage() {
     if (!user || !id) return;
 
     const fetchChatData = async () => {
-      // 1. Кто собеседник?
+      // 1. Получаем инфо о матче
       const { data: match } = await supabase
         .from('matches')
         .select(`initiator:initiator_id(id, first_name, avatar_url), requester:requester_id(id, first_name, avatar_url)`)
@@ -42,7 +42,7 @@ export default function ChatDetailPage() {
         setPartner(partnerData);
       }
 
-      // 2. Загружаем переписку
+      // 2. Загружаем историю
       const { data: msgs } = await supabase
         .from('messages')
         .select('*')
@@ -57,7 +57,11 @@ export default function ChatDetailPage() {
     // 3. Подписка (Realtime)
     const channel = supabase.channel(`chat:${id}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `match_id=eq.${id}` }, (payload) => {
-        setMessages((prev) => [...prev, payload.new]);
+        // Проверка на дубликаты
+        setMessages((prev) => {
+           if (prev.some(m => m.id === payload.new.id)) return prev;
+           return [...prev, payload.new];
+        });
       })
       .subscribe();
 
@@ -71,27 +75,45 @@ export default function ChatDetailPage() {
   const handleSend = async () => {
     if (!newMessage.trim()) return;
     
-    const text = newMessage;
-    setNewMessage(''); // Очищаем поле сразу (оптимистично)
+    // Используем переменную content вместо text
+    const content = newMessage.trim();
+    setNewMessage(''); 
 
-    // Отправка в БД
-    const { error } = await supabase.from('messages').insert([{
+    // ОПТИМИСТИЧНОЕ ОБНОВЛЕНИЕ (показываем сразу)
+    const tempId = Date.now(); 
+    const optimisticMsg = {
+      id: tempId,
       match_id: id,
       sender_id: user.id,
-      text: text
-    }]);
+      content: content, // FIX: text -> content
+      created_at: new Date().toISOString()
+    };
+    
+    setMessages(prev => [...prev, optimisticMsg]);
+
+    // Отправляем в базу
+    // FIX: Вставляем в колонку 'content', а не 'text'
+    const { data, error } = await supabase.from('messages').insert([{
+      match_id: id,
+      sender_id: user.id,
+      content: content 
+    }]).select().single();
 
     if (error) {
-        console.error('Send Error:', error);
-        // ПОКАЗЫВАЕМ ОШИБКУ ПОЛЬЗОВАТЕЛЮ
+        console.error('Ошибка отправки:', error);
         alert(`Не удалось отправить: ${error.message}`);
-        setNewMessage(text); // Возвращаем текст в поле, раз ошибка
+        // Убираем временное сообщение при ошибке
+        setMessages(prev => prev.filter(m => m.id !== tempId));
+        setNewMessage(content); 
+    } else if (data) {
+        // Подменяем временное сообщение реальным
+        setMessages(prev => prev.map(m => m.id === tempId ? data : m));
     }
   };
 
   return (
     <div className="w-full h-full bg-black flex flex-col">
-      {/* Header (pr-16 чтобы не перекрывалось меню Телеграма) */}
+      {/* HEADER */}
       <div className="pt-14 pb-4 pl-4 pr-16 flex items-center justify-between bg-black/80 backdrop-blur-md border-b border-white/5 z-20">
         <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-white active:opacity-50 transition-opacity"><ArrowLeft size={24} /></button>
         
@@ -106,9 +128,9 @@ export default function ChatDetailPage() {
         </div>
       </div>
 
-      {/* Chat Area */}
+      {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.length === 0 && <p className="text-center text-white/30 text-sm mt-10">История пуста...</p>}
+        {messages.length === 0 && partner && <p className="text-center text-white/30 text-sm mt-10">Начните общение с {partner.first_name}...</p>}
         
         {messages.map((msg) => {
           const isMe = msg.sender_id === user?.id;
@@ -124,7 +146,8 @@ export default function ChatDetailPage() {
                 "max-w-[75%] p-4 rounded-[20px] text-[15px] leading-relaxed relative",
                 isMe ? "bg-primary text-white rounded-tr-sm" : "bg-[#1C1C1E] text-white rounded-tl-sm"
               )}>
-                {msg.text}
+                {/* FIX: Отображаем msg.content */}
+                {msg.content || msg.text} 
                 <span className={clsx("text-[10px] absolute bottom-1 right-3 opacity-50")}>
                   {new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                 </span>
@@ -135,7 +158,7 @@ export default function ChatDetailPage() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
+      {/* Input Area */}
       <div className="p-4 bg-black border-t border-white/10 pb-8">
         <div className="flex gap-2 items-center bg-[#1C1C1E] rounded-full p-2 pl-4">
           <input 
