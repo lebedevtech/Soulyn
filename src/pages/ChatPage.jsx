@@ -64,9 +64,9 @@ export default function ChatPage() {
 
   return (
     <div className="relative w-full h-full bg-black flex flex-col">
-      {/* HEADER: Уровень top-14 (56px) как на карте. Текст поднят выше. */}
+      {/* HEADER: Уровень top-14. Текст поднят выше. */}
       <div className="absolute top-14 left-0 right-0 h-[52px] z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md border-b border-white/5">
-        <span className="text-[17px] font-bold text-white tracking-tight -translate-y-2">Чаты</span>
+        <span className="text-[17px] font-bold text-white tracking-tight -translate-y-3">Чаты</span>
       </div>
 
       <div className="absolute bottom-0 left-0 right-0 h-32 z-10 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none" />

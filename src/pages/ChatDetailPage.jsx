@@ -27,7 +27,7 @@ export default function ChatDetailPage() {
   const bottomRef = useRef(null);
 
   useEffect(() => {
-    // Mock partner & messages (как в стабильной версии)
+    // Mock partner & messages
     setPartner({ first_name: 'Анна', avatar_url: 'https://i.pravatar.cc/150?u=anna', is_online: true });
     setMessages([
       { id: 1, text: 'Привет! Видела твой импульс ⚡️', sender_id: 'partner', created_at: '12:30' },
@@ -47,7 +47,7 @@ export default function ChatDetailPage() {
 
   return (
     <div className="w-full h-full bg-black flex flex-col relative">
-      {/* HEADER: Кнопки опущены ниже (pt-24), текст партнера слегка приподнят (-translate-y-1). */}
+      {/* HEADER: Кнопки опущены (pt-24), текст партнера поднят выше (-translate-y-3). */}
       <div className="pt-24 pb-4 px-4 flex items-center justify-between bg-black/80 backdrop-blur-md border-b border-white/5 z-20 relative">
         <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-white active:opacity-50 z-10">
           <ArrowLeft size={24} />
@@ -55,7 +55,7 @@ export default function ChatDetailPage() {
         
         {/* Абсолютное центрирование имени с подъемом текста */}
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 translate-y-2 flex flex-col items-center pointer-events-none">
-          <span className="font-bold text-white text-[17px] leading-tight -translate-y-1">
+          <span className="font-bold text-white text-[17px] leading-tight -translate-y-3">
             {partner?.first_name || '...'}
           </span>
           <span className="text-[11px] text-green-500 font-medium">Online</span>
@@ -67,7 +67,7 @@ export default function ChatDetailPage() {
         </div>
       </div>
 
-      {/* Messages: pt-4 для стандартного отступа от хедера */}
+      {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((msg) => {
           const isMe = msg.sender_id === user?.id;
