@@ -1,61 +1,102 @@
-import { Link, useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Map, MessageCircle, Bell, User, Plus } from 'lucide-react';
+import { Map, MessageCircle, Heart, User, Plus } from 'lucide-react';
 import clsx from 'clsx';
+import { useTelegram } from '../../context/TelegramContext';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../context/AuthContext';
 
-const navItems = [
-  { path: '/', icon: Map, label: 'Карта' },
-  { path: '/chats', icon: MessageCircle, label: 'Чаты' },
-  { path: '/create', icon: Plus, isPrimary: true },
-  { path: '/notifications', icon: Bell, label: 'Увед.' },
-  { path: '/profile', icon: User, label: 'Профиль' },
+const NAV_ITEMS = [
+  { id: 'map', path: '/', icon: Map, label: 'Карта' },
+  { id: 'chats', path: '/chats', icon: MessageCircle, label: 'Чаты' },
+  { id: 'create', path: null, icon: Plus, label: '', isAction: true },
+  { id: 'likes', path: '/notifications', icon: Heart, label: 'Лайки' },
+  { id: 'profile', path: '/profile', icon: User, label: 'Профиль' },
 ];
 
-export default function BottomNav({ onCreateClick }) {
+export default function BottomNav({ onOpenCreate }) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { haptic } = useTelegram();
+  const { user } = useAuth();
+  const [unreadTotal, setUnreadTotal] = useState(0);
+
+  // Подсчет всех непрочитанных сообщений
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchUnread = async () => {
+      const { count } = await supabase
+        .from('messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_read', false)
+        .neq('sender_id', user.id); // Только те, что пришли МНЕ
+
+      setUnreadTotal(count || 0);
+    };
+
+    fetchUnread();
+
+    // Подписка на изменения (новые сообщения или прочтения)
+    const channel = supabase.channel('global_badges')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => {
+        fetchUnread();
+      })
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
+  }, [user]);
 
   return (
-    <div className="absolute bottom-8 left-4 right-4 h-20 bg-[#121212]/90 backdrop-blur-2xl border border-white/10 rounded-[32px] flex items-center justify-between px-2 shadow-2xl z-50">
-      {navItems.map((item) => {
+    <div className="absolute bottom-8 left-4 right-4 h-20 bg-[#1C1C1E]/80 backdrop-blur-xl border border-white/10 rounded-[32px] flex items-center justify-between px-2 shadow-2xl z-50">
+      {NAV_ITEMS.map((item) => {
         const isActive = location.pathname === item.path;
         
-        if (item.isPrimary) {
+        if (item.isAction) {
           return (
-            <div key="create" className="relative -top-6">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.9 }} // Сильное сжатие (Tactile feel)
-                transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                onClick={onCreateClick}
-                className="w-16 h-16 bg-primary rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.5)] border-4 border-black"
-              >
-                <Plus size={32} className="text-white" />
-              </motion.button>
-            </div>
+            <motion.button
+              key={item.id}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => {
+                haptic?.impact && haptic.impact('medium');
+                onOpenCreate();
+              }}
+              className="w-14 h-14 bg-primary rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.4)] relative -top-6 border-4 border-black active:scale-95 transition-transform"
+            >
+              <Plus size={28} color="white" strokeWidth={3} />
+            </motion.button>
           );
         }
 
         return (
-          <Link to={item.path} key={item.path} className="flex-1 flex flex-col items-center gap-1 py-2 relative">
-             <motion.div
-               whileTap={{ scale: 0.8 }} // Отклик на нажатие
-               className={clsx(
-                 "p-2 rounded-2xl transition-all duration-300",
-                 isActive ? "bg-white/10 text-white" : "text-white/40"
-               )}
-             >
-               <item.icon size={24} strokeWidth={isActive ? 2.5 : 2} />
-             </motion.div>
-             
-             {/* Точка-индикатор (Animation layoutId для плавного перемещения) */}
-             {isActive && (
-               <motion.div 
-                 layoutId="navIndicator"
-                 className="absolute bottom-2 w-1 h-1 bg-primary rounded-full box-shadow-[0_0_8px_rgba(139,92,246,1)]"
-                 transition={{ type: "spring", stiffness: 500, damping: 30 }}
-               />
-             )}
-          </Link>
+          <button
+            key={item.id}
+            onClick={() => {
+              if (!isActive) {
+                haptic?.selection && haptic.selection();
+                navigate(item.path);
+              }
+            }}
+            className="flex-1 h-full flex flex-col items-center justify-center gap-1 relative"
+          >
+            <div className={clsx("transition-colors duration-300 relative", isActive ? "text-white" : "text-white/30")}>
+              <item.icon size={24} strokeWidth={isActive ? 2.5 : 2} />
+              
+              {/* BADGE для Чатов */}
+              {item.id === 'chats' && unreadTotal > 0 && (
+                <div className="absolute -top-1 -right-2 min-w-[16px] h-[16px] px-1 bg-red-500 rounded-full flex items-center justify-center border border-[#1C1C1E]">
+                  <span className="text-[9px] font-bold text-white">{unreadTotal > 99 ? '99+' : unreadTotal}</span>
+                </div>
+              )}
+            </div>
+            {isActive && (
+              <motion.div 
+                layoutId="nav-indicator"
+                className="absolute bottom-2 w-1 h-1 bg-white rounded-full shadow-[0_0_8px_white]"
+              />
+            )}
+          </button>
         );
       })}
     </div>
