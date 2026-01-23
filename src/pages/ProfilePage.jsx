@@ -29,19 +29,23 @@ export default function ProfilePage() {
   return (
     <div className="relative w-full h-full bg-black flex flex-col overflow-hidden">
       
-      {/* FIXED HEADER: Эталон (top-14, span -translate-y-3) */}
-      <div className="fixed top-14 left-0 right-0 h-[52px] z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md border-b border-white/5 text-center">
+      {/* 1. FIXED HEADER (Эталон: top-14, z-70) */}
+      <div className="fixed top-14 left-0 right-0 h-[52px] z-[70] flex items-center justify-center bg-black/80 backdrop-blur-md border-b border-white/5 text-center">
         <span className="text-[17px] font-bold text-white tracking-tight -translate-y-3">Профиль</span>
       </div>
 
-      {/* FIXED BOTTOM GRADIENT: Теперь не перекрывает пункты меню при скролле */}
-      <div className="fixed bottom-0 left-0 right-0 h-32 z-[55] bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none" />
+      {/* 2. FIXED GRADIENTS (Верхний и Нижний) */}
+      {/* Top Gradient */}
+      <div className="fixed top-0 left-0 right-0 h-40 z-[65] bg-gradient-to-b from-black via-black/80 to-transparent pointer-events-none" />
+      
+      {/* Bottom Gradient (z-45, чтобы быть под BottomNav(z-50), но над контентом) */}
+      <div className="fixed bottom-0 left-0 right-0 h-40 z-[45] bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none" />
 
-      {/* SCROLLABLE CONTENT */}
-      <div className="flex-1 overflow-y-auto no-scrollbar pt-28 pb-40 px-6 relative z-10">
+      {/* 3. SCROLLABLE CONTENT */}
+      <div className="flex-1 overflow-y-auto no-scrollbar pt-28 pb-44 px-6 relative z-10">
         
-        {/* 1. ЛИЧНОСТЬ (Human Profile) */}
-        <div className="flex items-center gap-4 mb-8 mt-2">
+        {/* HUMAN PROFILE SECTION */}
+        <div className="flex items-center gap-5 mb-8 mt-2">
           <div className="relative shrink-0">
             <div className="w-16 h-16 rounded-full border border-white/10 p-1 bg-white/5 shadow-2xl">
               <img 
@@ -61,7 +65,7 @@ export default function ProfilePage() {
             </h3>
             <button 
               onClick={() => { haptic?.impact('light'); setShowStatusPicker(!showStatusPicker); }}
-              className="mt-1 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/10 active:bg-white/10 transition-all"
+              className="mt-1 flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 active:bg-white/10 transition-all"
             >
               {currentStatus ? (
                 <>
@@ -75,7 +79,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* 2. STATS & PROGRESS */}
+        {/* STATS & CLUB TIER */}
         <div className="mb-10">
           <div className="grid grid-cols-3 gap-2 mb-4">
             {[
@@ -90,9 +94,9 @@ export default function ProfilePage() {
             ))}
           </div>
           <div className="px-1">
-            <div className="flex justify-between items-center mb-1.5 font-black text-[8px] uppercase tracking-widest">
-              <span className="text-white/30">Club Progress</span>
-              <span className="text-primary">Tier 1 • 75%</span>
+            <div className="flex justify-between items-center mb-1.5 font-black text-[8px] uppercase tracking-widest text-white/30">
+              <span>Club Progress</span>
+              <span className="text-primary tracking-normal">75% to Tier 2</span>
             </div>
             <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
               <motion.div initial={{ width: 0 }} animate={{ width: '75%' }} className="h-full bg-primary" />
@@ -100,23 +104,20 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* 3. ABSTRACT NFT ARTIFACT (Уникальная карточка) */}
+        {/* ABSTRACT NFT ARTIFACT (Soulyn Passport) */}
         <div className="mb-4 px-1 flex justify-between items-end">
-           <h3 className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em]">Identity Asset</h3>
-           <span className="text-[8px] font-bold text-primary/40 uppercase tracking-widest">Verified by Soulyn</span>
+           <h3 className="text-[9px] font-black text-white/20 uppercase tracking-[0.3em]">Identity Asset</h3>
+           <Award size={12} className="text-primary/40" />
         </div>
         
         <motion.div 
           whileTap={{ scale: 0.98 }}
           className="relative w-full aspect-[1.5/1] glass-panel rounded-[32px] p-6 overflow-hidden border border-white/10 shadow-2xl mb-12"
         >
-          {/* NFT Core: Генеративная абстракция */}
+          {/* Генеративная абстракция фона */}
           <div className="absolute inset-0 flex items-center justify-center opacity-30">
              <motion.div 
-               animate={{ 
-                 scale: [1, 1.2, 1],
-                 rotate: 360 
-               }}
+               animate={{ scale: [1, 1.2, 1], rotate: 360 }}
                transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
                className="w-48 h-48 bg-gradient-to-tr from-primary/60 to-transparent blur-[60px] rounded-full"
              />
@@ -125,10 +126,7 @@ export default function ProfilePage() {
           <div className="relative h-full flex flex-col justify-between z-10">
             <div className="flex justify-between items-start">
               <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                  <span className="text-[7px] font-black text-white/40 uppercase tracking-[0.4em]">Node Active</span>
-                </div>
+                <span className="text-[7px] font-black text-primary uppercase tracking-[0.4em]">Series Genesis</span>
                 <h2 className="text-sm font-black text-white/20 tracking-[0.5em] uppercase">Artifact</h2>
               </div>
               <div className="flex gap-2">
@@ -137,8 +135,8 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* ABSTRACT VISUAL CODE */}
-            <div className="flex justify-center items-center h-16">
+            {/* ABSTRACT VISUAL CORE */}
+            <div className="flex justify-center items-center">
                <div className="relative w-12 h-12 flex items-center justify-center">
                   <Cpu size={32} className="text-white/10 absolute animate-pulse" />
                   <Hexagon size={44} className="text-primary/20 fill-white/5 rotate-90" />
@@ -147,7 +145,7 @@ export default function ProfilePage() {
 
             <div className="flex justify-between items-end border-t border-white/5 pt-4">
               <div className="flex flex-col">
-                <span className="text-[7px] font-black text-white/10 uppercase tracking-[0.3em] mb-0.5">Hash Reference</span>
+                <span className="text-[7px] font-black text-white/10 uppercase tracking-[0.3em] mb-0.5">Asset Reference</span>
                 <span className="text-[9px] font-bold text-white/30 tracking-tight">SOUL-GEN-000{user?.id?.toString().slice(-3) || '482'}</span>
               </div>
               <div className="flex flex-col items-end">
@@ -158,7 +156,7 @@ export default function ProfilePage() {
           </div>
         </motion.div>
 
-        {/* 4. MANAGEMENT MENU */}
+        {/* MANAGEMENT MENU */}
         <div className="space-y-6">
           <section>
             <div className="bg-white/5 border border-white/5 rounded-[28px] overflow-hidden">
@@ -167,7 +165,7 @@ export default function ProfilePage() {
                 { icon: Share2, label: 'Передать актив', color: 'text-primary' },
                 { icon: LayoutGrid, label: 'Коллекция мест', color: 'text-orange-400' },
                 { icon: Shield, label: 'Приватность', color: 'text-blue-400' },
-                { icon: LogOut, label: 'Разорвать соединение', color: 'text-red-500', action: signOut },
+                { icon: LogOut, label: 'Выйти из аккаунта', color: 'text-red-500', action: signOut },
               ].map((item, i, arr) => (
                 <button 
                   key={i} 
