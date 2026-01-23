@@ -55,8 +55,8 @@ export default function ProfilePage() {
         <span className="relative z-10 text-[17px] font-bold text-white tracking-tight drop-shadow-md">Профиль</span>
       </div>
 
-      {/* ГРАДИЕНТЫ (Z-20: Поверх фона, но под контентом) */}
-      <div className="absolute top-0 left-0 right-0 h-32 z-20 pointer-events-none bg-gradient-to-b from-black/80 via-black/40 to-transparent" />
+      {/* ГРАДИЕНТЫ (Z-20: Скопированы с MapPage для единого стиля) */}
+      <div className="absolute top-0 left-0 right-0 h-32 z-20 pointer-events-none bg-gradient-to-b from-black via-black/90 to-transparent" />
       <div className="absolute bottom-0 left-0 right-0 h-48 z-20 pointer-events-none bg-gradient-to-t from-black via-black/95 to-transparent" />
 
       <div className="flex-1 overflow-y-auto no-scrollbar relative z-10">
@@ -83,20 +83,19 @@ export default function ProfilePage() {
           <motion.h1 variants={itemVariants} className="text-3xl font-black text-white tracking-tight mb-2">{user.first_name}</motion.h1>
           <motion.div variants={itemVariants} className="flex items-center gap-2 text-white/50 text-sm font-medium mb-8"><MapPin size={14} /> Москва, Патриаршие</motion.div>
 
-          {/* Stats */}
+          {/* Stats (Выезжают блоком) */}
           <motion.div variants={itemVariants} className="w-full grid grid-cols-3 gap-3 mb-8">
             <div className="glass-panel p-4 rounded-3xl flex flex-col items-center gap-1"><span className="text-2xl font-black text-white">24</span><span className="text-[10px] uppercase text-white/40 tracking-wider">Импульса</span></div>
             <div className="glass-panel p-4 rounded-3xl flex flex-col items-center gap-1"><span className="text-2xl font-black text-white">12</span><span className="text-[10px] uppercase text-white/40 tracking-wider">Мэтча</span></div>
             <div className="glass-panel p-4 rounded-3xl flex flex-col items-center gap-1"><span className="text-2xl font-black text-white">4.9</span><span className="text-[10px] uppercase text-white/40 tracking-wider">Рейтинг</span></div>
           </motion.div>
 
-          {/* Menu Buttons (FIX: Используем motion.div c containerVariants для проброса анимации) */}
+          {/* Menu Buttons (FIX: Теперь выезжают ОДНИМ блоком, как статистика) */}
           <motion.div 
             className="w-full space-y-3"
-            variants={containerVariants}
+            variants={itemVariants} // Используем itemVariants для всего блока сразу
           >
             <motion.button 
-              variants={itemVariants} 
               whileTap="tap"
               className="w-full p-5 rounded-[24px] bg-white/5 border border-white/5 flex items-center gap-4 active:bg-white/10 transition-colors"
             >
@@ -105,7 +104,6 @@ export default function ProfilePage() {
             </motion.button>
             
             <motion.button 
-              variants={itemVariants} 
               whileTap="tap"
               className="w-full p-5 rounded-[24px] bg-white/5 border border-white/5 flex items-center gap-4 active:bg-white/10 transition-colors"
             >
