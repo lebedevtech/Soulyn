@@ -6,22 +6,22 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import clsx from 'clsx';
 
-// ЭТАЛОННАЯ АНИМАЦИЯ (КАК В УВЕДОМЛЕНИЯХ)
+// КОПИЯ АНИМАЦИИ ИЗ MAP PAGE (для консистентности)
 const listContainerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.08, delayChildren: 0.1 }
+    transition: { staggerChildren: 0.05, delayChildren: 0.1 }
   }
 };
 
 const itemVariants = {
-  hidden: { y: 20, opacity: 0, scale: 0.95 },
+  hidden: { y: 15, opacity: 0, scale: 0.98 },
   visible: { 
     y: 0, 
     opacity: 1, 
     scale: 1,
-    transition: { type: "spring", stiffness: 400, damping: 30 }
+    transition: { type: "spring", stiffness: 400, damping: 30, mass: 1 } 
   }
 };
 
@@ -33,16 +33,12 @@ export default function ChatPage() {
 
   useEffect(() => {
     if (!user) return;
-
     const fetchChats = async () => {
-      // Имитация задержки для красоты (чтобы увидеть анимацию)
       await new Promise(r => setTimeout(r, 300));
-
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('matches')
         .select(`
-          id,
-          status,
+          id, status,
           initiator:initiator_id(first_name, avatar_url),
           requester:requester_id(first_name, avatar_url),
           impulse:impulse_id(message)
@@ -51,11 +47,9 @@ export default function ChatPage() {
         .eq('status', 'accepted')
         .order('created_at', { ascending: false });
 
-      if (error) console.error(error);
       setChats(data || []);
       setLoading(false);
     };
-
     fetchChats();
   }, [user]);
 
@@ -68,8 +62,8 @@ export default function ChatPage() {
   }
 
   return (
-    // ИСПРАВЛЕНИЕ: Увеличили отступ (pt-20), чтобы не наезжать на кнопки Telegram
-    <div className="w-full h-full bg-black flex flex-col pt-20 px-6">
+    // FIX: Увеличили отступ до pt-28 (112px) - теперь точно не наедет на кнопки TG
+    <div className="w-full h-full bg-black flex flex-col pt-28 px-6">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-black text-white tracking-tight">Чаты</h1>
         <div className="p-3 bg-white/5 rounded-full border border-white/5">
@@ -77,7 +71,7 @@ export default function ChatPage() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto no-scrollbar pb-24">
+      <div className="flex-1 overflow-y-auto no-scrollbar pb-32">
         {chats.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-center">
             <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-4 text-white/20">
@@ -88,7 +82,7 @@ export default function ChatPage() {
           </div>
         ) : (
           <motion.div 
-            className="space-y-2"
+            className="space-y-2 transform-gpu" // GPU ускорение
             variants={listContainerVariants}
             initial="hidden"
             animate="visible"
@@ -105,24 +99,16 @@ export default function ChatPage() {
                   className="w-full p-4 rounded-[24px] bg-white/5 border border-white/5 flex items-center gap-4 active:scale-[0.98] transition-all"
                 >
                   <div className="relative">
-                    <img 
-                      src={partner.avatar_url || 'https://i.pravatar.cc/150'} 
-                      className="w-14 h-14 rounded-full object-cover border border-white/10" 
-                      alt=""
-                    />
+                    <img src={partner.avatar_url || 'https://i.pravatar.cc/150'} className="w-14 h-14 rounded-full object-cover border border-white/10" alt=""/>
                     <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-black rounded-full" />
                   </div>
-                  
                   <div className="flex-1 text-left min-w-0">
                     <div className="flex justify-between items-center mb-1">
                       <h3 className="font-bold text-white text-lg">{partner.first_name}</h3>
                       <span className="text-[10px] text-white/30 font-bold uppercase">12:30</span>
                     </div>
-                    <p className="text-white/50 text-sm truncate pr-4">
-                      {chat.impulse?.message || 'Новый чат'}
-                    </p>
+                    <p className="text-white/50 text-sm truncate pr-4">{chat.impulse?.message || 'Новый чат'}</p>
                   </div>
-                  
                   <ChevronRight size={20} className="text-white/20" />
                 </motion.button>
               );

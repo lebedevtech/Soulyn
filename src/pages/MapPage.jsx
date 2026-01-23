@@ -11,29 +11,25 @@ import {
 import { useLocation } from '../context/LocationContext';
 import clsx from 'clsx';
 
-// ЭТАЛОННАЯ АНИМАЦИЯ (КАК В УВЕДОМЛЕНИЯХ)
-const overlayVariants = {
-  hidden: { opacity: 0 },
-  visible: { 
-    opacity: 1, 
-    transition: { duration: 0.3 }
-  },
-  exit: { opacity: 0, transition: { duration: 0.2 } }
-};
-
+// ЭТАЛОННЫЕ ПАРАМЕТРЫ АНИМАЦИИ (Notifications Style)
 const listContainerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.08, // Четкий каскад
-      delayChildren: 0.1
+      staggerChildren: 0.05, // Быстрый, приятный каскад
+      delayChildren: 0.05
     }
-  }
+  },
+  exit: { opacity: 0, transition: { duration: 0.2 } }
 };
 
 const itemVariants = {
-  hidden: { y: 20, opacity: 0, scale: 0.95 },
+  hidden: { 
+    y: 15, // Чуть меньшая амплитуда движения, чтобы меньше "мылило"
+    opacity: 0, 
+    scale: 0.98 
+  },
   visible: { 
     y: 0, 
     opacity: 1, 
@@ -41,7 +37,8 @@ const itemVariants = {
     transition: { 
       type: "spring", 
       stiffness: 400, 
-      damping: 30 // Мягкая, но быстрая пружина (как в iOS уведомлениях)
+      damping: 30, // Мягкая остановка без дребезга
+      mass: 1
     } 
   }
 };
@@ -134,39 +131,57 @@ export default function MapPage({ onOpenCreate }) {
         <MapView impulses={impulses} venues={venues} mode={mapLayer} userLocation={userLocation} followUser={followUser} onUserInteraction={() => setFollowUser(false)} onImpulseClick={setSelectedImpulse} onVenueClick={(venue) => setSelectedVenue(venue)} />
       </div>
 
-      {/* LIST VIEW (SMOOTH FADE & SCROLL) */}
+      {/* LIST VIEW */}
       <AnimatePresence>
         {viewMode === 'list' && (
           <motion.div 
-            variants={overlayVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
             className="absolute inset-0 z-10 bg-black/60 backdrop-blur-xl"
           >
+            {/* Градиенты */}
             <div className="absolute top-0 left-0 right-0 h-32 z-20 pointer-events-none bg-gradient-to-b from-black via-black/90 to-transparent" />
             <div className="absolute bottom-0 left-0 right-0 h-48 z-20 pointer-events-none bg-gradient-to-t from-black via-black/95 to-transparent" />
 
+            {/* Контейнер списка */}
             <div className="w-full h-full overflow-y-auto no-scrollbar pt-32 pb-48 px-6 relative z-10">
               {mapLayer === 'places' ? (
-                <motion.section variants={listContainerVariants} initial="hidden" animate="visible">
+                // ВАЖНО: transform-gpu убирает лаги при скролле на фоне карты
+                <motion.div 
+                  className="space-y-4 transform-gpu"
+                  variants={listContainerVariants} 
+                  initial="hidden" 
+                  animate="visible"
+                >
                    <motion.h3 variants={itemVariants} className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] mb-6 ml-1">Лучшие места</motion.h3>
-                   <div className="space-y-4">
-                     {venues.map(venue => (
-                       <motion.button key={venue.id} variants={itemVariants} onClick={() => setSelectedVenue(venue)} className="w-full glass-panel p-4 rounded-[24px] flex gap-4 active:scale-[0.98] transition-transform text-left">
-                         <img src={venue.image_url} className="w-20 h-20 rounded-xl object-cover shadow-lg" alt={venue.name} />
-                         <div>
-                           <h3 className="text-white font-bold text-lg leading-tight">{venue.name}</h3>
-                           <p className="text-white/50 text-xs mt-1 line-clamp-2 leading-relaxed">{venue.description}</p>
-                           <span className="inline-block mt-2 px-2 py-1 bg-white/10 rounded text-[10px] text-white font-bold uppercase tracking-wider">{venue.average_check}</span>
-                         </div>
-                       </motion.button>
-                     ))}
-                   </div>
-                </motion.section>
+                   
+                   {venues.map(venue => (
+                     <motion.button 
+                       key={venue.id} 
+                       variants={itemVariants} 
+                       // УБРАЛИ prop 'layout' - это починит дерганье!
+                       onClick={() => setSelectedVenue(venue)} 
+                       className="w-full glass-panel p-4 rounded-[24px] flex gap-4 active:scale-[0.98] transition-transform text-left"
+                     >
+                       <img src={venue.image_url} className="w-20 h-20 rounded-xl object-cover shadow-lg" alt={venue.name} />
+                       <div>
+                         <h3 className="text-white font-bold text-lg leading-tight">{venue.name}</h3>
+                         <p className="text-white/50 text-xs mt-1 line-clamp-2 leading-relaxed">{venue.description}</p>
+                         <span className="inline-block mt-2 px-2 py-1 bg-white/10 rounded text-[10px] text-white font-bold uppercase tracking-wider">{venue.average_check}</span>
+                       </div>
+                     </motion.button>
+                   ))}
+                </motion.div>
               ) : (
-                <motion.div variants={listContainerVariants} initial="hidden" animate="visible">
-                  <motion.section variants={itemVariants} className="mb-10">
+                <motion.div 
+                  className="space-y-4 transform-gpu"
+                  variants={listContainerVariants} 
+                  initial="hidden" 
+                  animate="visible"
+                >
+                  <motion.div variants={itemVariants} className="mb-10">
                     <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mb-5 ml-1">Категории</h3>
                     <div className="grid grid-cols-2 gap-3">
                       {CATEGORIES.map((cat) => (
@@ -179,33 +194,39 @@ export default function MapPage({ onOpenCreate }) {
                         </button>
                       ))}
                     </div>
-                  </motion.section>
+                  </motion.div>
 
-                  <section>
+                  <div className="space-y-3">
                     <motion.h3 variants={itemVariants} className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mb-6 ml-1">Актуально сейчас</motion.h3>
-                    <div className="space-y-3">
-                      {impulses.length === 0 && <motion.p variants={itemVariants} className="text-white/30 text-center py-4 text-sm">Пока нет активных импульсов...</motion.p>}
-                      {impulses.map((imp) => {
-                        const user = imp.users || { first_name: 'Ghost' };
-                        return (
-                          <motion.button key={imp.id} variants={itemVariants} onClick={() => setSelectedImpulse(imp)} className={clsx("w-full glass-panel p-4 rounded-[30px] flex items-center gap-4 active:scale-[0.98] transition-all text-left", user.is_premium && "border-yellow-500/30 shadow-[0_0_15px_rgba(234,179,8,0.1)]")}>
-                            <div className="w-14 h-14 rounded-full border-2 border-primary/20 p-0.5 shrink-0 relative">
-                              <img src={user.avatar_url || 'https://i.pravatar.cc/150'} className="w-full h-full rounded-full object-cover" alt="" />
-                              {user.is_premium && <div className="absolute -top-1 -right-1 bg-black rounded-full p-1 border border-yellow-500"><Star size={10} className="text-yellow-400 fill-yellow-400" /></div>}
+                    
+                    {impulses.length === 0 && <motion.p variants={itemVariants} className="text-white/30 text-center py-4 text-sm">Пока нет активных импульсов...</motion.p>}
+                    
+                    {impulses.map((imp) => {
+                      const user = imp.users || { first_name: 'Ghost' };
+                      return (
+                        <motion.button 
+                          key={imp.id} 
+                          variants={itemVariants} 
+                          // УБРАЛИ prop 'layout'
+                          onClick={() => setSelectedImpulse(imp)} 
+                          className={clsx("w-full glass-panel p-4 rounded-[30px] flex items-center gap-4 active:scale-[0.98] transition-all text-left", user.is_premium && "border-yellow-500/30 shadow-[0_0_15px_rgba(234,179,8,0.1)]")}
+                        >
+                          <div className="w-14 h-14 rounded-full border-2 border-primary/20 p-0.5 shrink-0 relative">
+                            <img src={user.avatar_url || 'https://i.pravatar.cc/150'} className="w-full h-full rounded-full object-cover" alt="" />
+                            {user.is_premium && <div className="absolute -top-1 -right-1 bg-black rounded-full p-1 border border-yellow-500"><Star size={10} className="text-yellow-400 fill-yellow-400" /></div>}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex justify-between items-center mb-1">
+                              <p className={clsx("font-bold text-base", user.is_premium ? "text-yellow-400" : "text-white")}>{user.first_name}</p>
+                              <span className="text-[10px] font-black text-primary uppercase">~500м</span>
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex justify-between items-center mb-1">
-                                <p className={clsx("font-bold text-base", user.is_premium ? "text-yellow-400" : "text-white")}>{user.first_name}</p>
-                                <span className="text-[10px] font-black text-primary uppercase">~500м</span>
-                              </div>
-                              <p className="text-white/60 text-sm line-clamp-1 font-medium">{imp.message}</p>
-                              {imp.venues && <div className="flex items-center gap-1 text-[10px] text-white/30 font-black uppercase mt-1"><MapPin size={10} className="text-primary" /> {imp.venues.name}</div>}
-                            </div>
-                          </motion.button>
-                        );
-                      })}
-                    </div>
-                  </section>
+                            <p className="text-white/60 text-sm line-clamp-1 font-medium">{imp.message}</p>
+                            {imp.venues && <div className="flex items-center gap-1 text-[10px] text-white/30 font-black uppercase mt-1"><MapPin size={10} className="text-primary" /> {imp.venues.name}</div>}
+                          </div>
+                        </motion.button>
+                      );
+                    })}
+                  </div>
                 </motion.div>
               )}
             </div>
