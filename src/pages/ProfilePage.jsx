@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import clsx from 'clsx';
 
-// PREMIUM ANIMATION CONSTANTS (Единая физика)
+// PREMIUM ANIMATION CONSTANTS
 const TRANSITION_EASE = [0.25, 0.1, 0.25, 1];
 
 const containerVariants = {
@@ -55,12 +55,12 @@ export default function ProfilePage() {
         <span className="relative z-10 text-[17px] font-bold text-white tracking-tight drop-shadow-md">Профиль</span>
       </div>
 
-      {/* ГРАДИЕНТЫ (Z-20: Поверх фона, но под контентом и хедером) */}
+      {/* ГРАДИЕНТЫ (Z-20: Поверх фона, но под контентом) */}
       <div className="absolute top-0 left-0 right-0 h-32 z-20 pointer-events-none bg-gradient-to-b from-black/80 via-black/40 to-transparent" />
       <div className="absolute bottom-0 left-0 right-0 h-48 z-20 pointer-events-none bg-gradient-to-t from-black via-black/95 to-transparent" />
 
       <div className="flex-1 overflow-y-auto no-scrollbar relative z-10">
-        {/* ФОН (Background Image) */}
+        {/* ФОН */}
         <div className="absolute top-0 left-0 right-0 h-[500px] z-0">
            <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1000&auto=format&fit=crop')] bg-cover bg-center opacity-50" />
            <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/80 to-black" />
@@ -90,8 +90,11 @@ export default function ProfilePage() {
             <div className="glass-panel p-4 rounded-3xl flex flex-col items-center gap-1"><span className="text-2xl font-black text-white">4.9</span><span className="text-[10px] uppercase text-white/40 tracking-wider">Рейтинг</span></div>
           </motion.div>
 
-          {/* Menu Buttons (Плавная анимация) */}
-          <div className="w-full space-y-3">
+          {/* Menu Buttons (FIX: Используем motion.div c containerVariants для проброса анимации) */}
+          <motion.div 
+            className="w-full space-y-3"
+            variants={containerVariants}
+          >
             <motion.button 
               variants={itemVariants} 
               whileTap="tap"
@@ -109,7 +112,7 @@ export default function ProfilePage() {
               <div className="p-2 bg-white/10 rounded-xl text-white"><Settings size={20} /></div>
               <span className="font-bold text-white text-lg flex-1 text-left">Настройки</span>
             </motion.button>
-          </div>
+          </motion.div>
 
           {debugLogin && (
             <motion.div variants={itemVariants} className="w-full mt-10 border-t border-white/10 pt-6">
