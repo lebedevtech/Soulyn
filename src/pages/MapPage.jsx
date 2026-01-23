@@ -98,7 +98,7 @@ export default function MapPage({ onOpenCreate }) {
   return (
     <div className="relative w-full h-full bg-black overflow-hidden">
       
-      {/* HEADER */}
+      {/* HEADER (Z-60) */}
       <div className="absolute top-14 left-1/2 -translate-x-1/2 z-[60] flex flex-col items-center pointer-events-none">
         <h1 className="text-xl font-black text-white tracking-tighter drop-shadow-2xl leading-none">Soulyn</h1>
         <div className="flex items-center gap-1.5 mt-1">
@@ -135,13 +135,13 @@ export default function MapPage({ onOpenCreate }) {
             transition={{ duration: 0.25 }}
             className="absolute inset-0 z-10 bg-black/60 backdrop-blur-xl"
           >
-            {/* ГРАДИЕНТЫ */}
+            {/* ГРАДИЕНТЫ (Z-50) */}
             <div className="absolute top-0 left-0 right-0 h-32 z-50 pointer-events-none bg-gradient-to-b from-black via-black/90 to-transparent" />
             <div className="absolute bottom-0 left-0 right-0 h-48 z-50 pointer-events-none bg-gradient-to-t from-black via-black/95 to-transparent" />
 
             <div className="w-full h-full overflow-y-auto no-scrollbar pt-32 pb-48 px-6 relative z-10">
               {mapLayer === 'places' ? (
-                // === СПИСОК МЕСТ ===
+                // === СПИСОК МЕСТ (STYLE FROM CATEGORIES: NO BLUR) ===
                 <motion.div 
                   key="places-list"
                   className="space-y-4"
@@ -154,8 +154,8 @@ export default function MapPage({ onOpenCreate }) {
                    {venues.map(venue => (
                      <motion.button 
                        key={venue.id} 
-                       // === FIX: SEPARATED LAYERS ===
-                       className="relative w-full p-4 flex gap-4 text-left group" 
+                       // STABLE STYLE: Border + Solid bg (like Categories)
+                       className="relative w-full p-4 flex gap-4 text-left group rounded-[24px] border border-white/5 overflow-hidden" 
                        variants={cardVariants}
                        initial="hidden"
                        whileInView="visible"
@@ -163,10 +163,10 @@ export default function MapPage({ onOpenCreate }) {
                        whileTap="tap"
                        onClick={() => setSelectedVenue(venue)} 
                      >
-                       {/* 1. GLASS LAYER (Static background) */}
-                       <div className="absolute inset-0 glass-panel rounded-[24px]" />
+                       {/* BACKGROUND: Pure solid/alpha color. NO BLUR. */}
+                       <div className="absolute inset-0 bg-white/5 z-0" />
 
-                       {/* 2. CONTENT LAYER (On top) */}
+                       {/* CONTENT */}
                        <div className="relative z-10 flex gap-4 w-full items-center">
                           <img src={venue.image_url} className="w-20 h-20 rounded-xl object-cover shadow-lg group-active:scale-[0.98] transition-transform duration-200 shrink-0" alt={venue.name} />
                           <div className="min-w-0">
@@ -179,7 +179,7 @@ export default function MapPage({ onOpenCreate }) {
                    ))}
                 </motion.div>
               ) : (
-                // === СПИСОК ИМПУЛЬСОВ ===
+                // === СПИСОК ИМПУЛЬСОВ (UPDATED TO MATCH) ===
                 <motion.div 
                   key="impulses-list"
                   className="space-y-4"
@@ -228,13 +228,14 @@ export default function MapPage({ onOpenCreate }) {
                       return (
                         <motion.button 
                           key={imp.id} 
-                          // FIX: SEPARATE LAYERS FOR IMPULSES TOO
-                          className="relative w-full p-4 flex gap-4 items-center text-left group"
+                          // STYLE FROM CATEGORIES: NO BLUR
+                          className={clsx("relative w-full p-4 flex gap-4 items-center text-left group rounded-[30px] border border-white/5 overflow-hidden", user.is_premium && "border-yellow-500/30")}
                           variants={cardVariants} 
                           whileTap="tap"
                           onClick={() => setSelectedImpulse(imp)} 
                         >
-                          <div className={clsx("absolute inset-0 glass-panel rounded-[30px]", user.is_premium && "border-yellow-500/30 shadow-[0_0_15px_rgba(234,179,8,0.1)]")} />
+                           {/* BACKGROUND */}
+                          <div className={clsx("absolute inset-0 z-0", user.is_premium ? "bg-yellow-500/5" : "bg-white/5")} />
                           
                           <div className="relative z-10 flex gap-4 w-full items-center">
                             <div className="w-14 h-14 rounded-full border-2 border-primary/20 p-0.5 shrink-0 relative">
