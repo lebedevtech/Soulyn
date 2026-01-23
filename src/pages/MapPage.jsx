@@ -14,26 +14,26 @@ import {
 } from 'lucide-react';
 import clsx from 'clsx';
 
-// ПЕРЕКЛЮЧАТЕЛЬ (Версия 3.0 - Элитный Минимализм)
+// ПЕРЕКЛЮЧАТЕЛЬ (Компактный, в виде пилюли)
 const MapToggle = ({ mode, setMode }) => (
-  <div className="absolute top-36 left-6 z-30 flex items-center p-1 bg-black/60 backdrop-blur-md rounded-2xl border border-white/10 shadow-2xl">
+  <div className="flex flex-col gap-3 pointer-events-auto">
     <button
       onClick={() => setMode('social')}
       className={clsx(
-        "px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
-        mode === 'social' ? "bg-white text-black shadow-lg" : "text-white/40 hover:text-white"
+        "w-12 h-12 rounded-2xl flex items-center justify-center backdrop-blur-xl border transition-all shadow-xl active:scale-90",
+        mode === 'social' ? "bg-white text-black border-white" : "bg-black/40 text-white/50 border-white/10"
       )}
     >
-      <Users size={12} strokeWidth={3} /> Social
+      <Users size={20} />
     </button>
     <button
       onClick={() => setMode('places')}
       className={clsx(
-        "px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
-        mode === 'places' ? "bg-white text-black shadow-lg" : "text-white/40 hover:text-white"
+        "w-12 h-12 rounded-2xl flex items-center justify-center backdrop-blur-xl border transition-all shadow-xl active:scale-90",
+        mode === 'places' ? "bg-white text-black border-white" : "bg-black/40 text-white/50 border-white/10"
       )}
     >
-      <Building2 size={12} strokeWidth={3} /> Places
+      <Building2 size={20} />
     </button>
   </div>
 );
@@ -78,20 +78,22 @@ export default function MapPage() {
   return (
     <div className="relative w-full h-full bg-black overflow-hidden">
       
-      {/* 1. ЛОГОТИП (БЕЗОПАСНАЯ ЗОНА: top-20) */}
-      <div className="absolute top-20 left-6 z-30 flex flex-col pointer-events-none">
-        <h1 className="text-4xl font-black text-white tracking-tighter drop-shadow-2xl leading-none">Soulyn</h1>
-        <div className="flex items-center gap-2 mt-2 pl-1">
-          <div className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-          </div>
-          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/50">Москва</span>
+      {/* 1. ЛОГОТИП (ПО ЦЕНТРУ СВЕРХУ) */}
+      {/* top-2: чтобы встать в один ряд с кнопками Телеграма */}
+      {/* -translate-x-1/2: для идеального центрирования */}
+      <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center pointer-events-none">
+        <h1 className="text-xl font-black text-white tracking-tighter drop-shadow-2xl leading-none">Soulyn</h1>
+        <div className="flex items-center gap-1.5 mt-1">
+          <span className="w-1 h-1 bg-primary rounded-full animate-pulse shadow-[0_0_10px_rgba(139,92,246,1)]" />
+          <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-white/50">Москва</span>
         </div>
       </div>
 
-      {/* 2. ПЕРЕКЛЮЧАТЕЛЬ (СТРОГО ПОД ЛОГОТИПОМ: top-36) */}
-      <MapToggle mode={mapLayer} setMode={setMapLayer} />
+      {/* 2. ПЕРЕКЛЮЧАТЕЛЬ СЛОЕВ (СЛЕВА СНИЗУ) */}
+      {/* bottom-32: на одной высоте с правыми кнопками */}
+      <div className="absolute bottom-32 left-4 z-30">
+        <MapToggle mode={mapLayer} setMode={setMapLayer} />
+      </div>
 
       {/* 3. КАРТА */}
       <div className="absolute inset-0 z-0">
@@ -130,16 +132,16 @@ export default function MapPage() {
         </button>
       </div>
 
-      {/* 5. СПИСОК (Адаптирован под новые отступы: pt-56) */}
+      {/* 5. СПИСОК (Адаптирован под новый Header: pt-24 достаточно) */}
       <AnimatePresence>
         {viewMode === 'list' && (
           <div className="absolute inset-0 z-10">
-            <div className="absolute top-0 left-0 right-0 h-64 z-20 pointer-events-none bg-gradient-to-b from-black via-black/95 to-transparent" />
+            <div className="absolute top-0 left-0 right-0 h-32 z-20 pointer-events-none bg-gradient-to-b from-black via-black/95 to-transparent" />
             <div className="absolute bottom-0 left-0 right-0 h-48 z-20 pointer-events-none bg-gradient-to-t from-black via-black/95 to-transparent" />
 
             <motion.div 
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="w-full h-full bg-black/60 backdrop-blur-2xl overflow-y-auto no-scrollbar pt-56 pb-48 px-6 relative z-10"
+              className="w-full h-full bg-black/60 backdrop-blur-2xl overflow-y-auto no-scrollbar pt-24 pb-48 px-6 relative z-10"
             >
               {mapLayer === 'places' ? (
                 <section>
