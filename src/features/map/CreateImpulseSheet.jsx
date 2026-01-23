@@ -12,11 +12,10 @@ import clsx from 'clsx';
 
 const SHEET_TRANSITION = { duration: 0.5, ease: [0.22, 1, 0.36, 1] };
 
-// Вертикальная анимация появления контента
 const STEP_VARIANTS = {
-  enter: { y: 40, opacity: 0 },
+  enter: { y: 30, opacity: 0 },
   center: { y: 0, opacity: 1 },
-  exit: { y: -20, opacity: 0 },
+  exit: { y: -10, opacity: 0 },
 };
 
 const VIBES = [
@@ -26,7 +25,7 @@ const VIBES = [
   { id: 'date', label: 'Date', icon: Sparkles, color: 'text-red-400' },
 ];
 
-const TIME_SLOTS = ["Сейчас", "В течение 30 мин", "Через 1 час", "Вечером"];
+const TIME_SLOTS = ["Сейчас", "30 мин", "1 час", "Вечер"];
 
 export default function CreateImpulseSheet({ isOpen, initialData, onClose }) {
   const { user } = useAuth();
@@ -64,6 +63,18 @@ export default function CreateImpulseSheet({ isOpen, initialData, onClose }) {
   const nextStep = () => setStep(s => s + 1);
   const prevStep = () => setStep(s => s - 1);
 
+  // Получаем название шага для хедера
+  const getStepTitle = () => {
+    switch(step) {
+      case 1: return "Локация";
+      case 2: return "Вайб и время";
+      case 3: return "Планы";
+      case 4: return "Приватность";
+      case 5: return "Резюме";
+      default: return "Импульс";
+    }
+  };
+
   const handleCreate = async () => {
     setIsSending(true);
     const lat = selectedVenue?.lat || gpsLocation?.[0] || 55.7558;
@@ -97,7 +108,7 @@ export default function CreateImpulseSheet({ isOpen, initialData, onClose }) {
             transition={SHEET_TRANSITION}
             className="fixed bottom-0 left-0 right-0 z-[110] bg-[#0A0A0A] rounded-t-[48px] border-t border-white/5 p-6 pb-12 shadow-2xl overflow-hidden"
           >
-            {/* Тонкий индикатор прогресса */}
+            {/* Прогресс */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-white/5">
               <motion.div 
                 className="h-full bg-primary"
@@ -105,22 +116,31 @@ export default function CreateImpulseSheet({ isOpen, initialData, onClose }) {
               />
             </div>
 
-            <div className="flex justify-between items-center mb-6">
-              {step > 1 ? (
-                <button onClick={prevStep} className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 text-white/40"><ChevronLeft size={20} /></button>
-              ) : <div className="w-10" />}
-              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white/10">Step 0{step}</span>
-              <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 text-white/40"><X size={20} /></button>
+            {/* ХЕДЕР С ЦЕНТРАЛЬНЫМ ЗАГОЛОВКОМ */}
+            <div className="flex justify-between items-center mb-10">
+              <div className="w-10">
+                {step > 1 && (
+                  <button onClick={prevStep} className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 text-white/40 active:scale-90 transition-transform">
+                    <ChevronLeft size={20} />
+                  </button>
+                )}
+              </div>
+              
+              <span className="text-[13px] font-bold text-white uppercase tracking-[0.2em] -translate-y-3">
+                {getStepTitle()}
+              </span>
+
+              <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 text-white/40 active:scale-90 transition-transform">
+                <X size={20} />
+              </button>
             </div>
 
-            <div className="relative min-h-[400px]">
+            <div className="relative min-h-[360px]">
               <AnimatePresence mode="wait">
                 
+                {/* ШАГ 1: ЛОКАЦИЯ */}
                 {step === 1 && (
                   <motion.div key="step1" variants={STEP_VARIANTS} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }}>
-                    <h2 className="text-2xl font-black text-white tracking-tighter mb-1">Место встречи</h2>
-                    <p className="text-white/40 text-xs mb-6 font-medium">Куда отправимся сегодня?</p>
-                    
                     <div className="relative mb-6">
                       <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={18} />
                       <input 
@@ -132,9 +152,10 @@ export default function CreateImpulseSheet({ isOpen, initialData, onClose }) {
                     </div>
 
                     <div className="space-y-2">
+                      <h3 className="text-[9px] font-black text-white/20 uppercase tracking-widest mb-3 ml-1">Популярные места</h3>
                       {popularVenues.map(venue => (
                         <button key={venue.id} onClick={() => { setSelectedVenue(venue); nextStep(); }} className="w-full p-3 rounded-[24px] bg-white/[0.02] border border-white/5 flex items-center gap-3 active:bg-white/5 transition-colors">
-                          <img src={venue.image_url} className="w-12 h-12 rounded-xl object-cover shadow-2xl" />
+                          <img src={venue.image_url} className="w-11 h-11 rounded-xl object-cover shadow-2xl" />
                           <div className="text-left flex-1">
                             <p className="font-bold text-white text-sm">{venue.name}</p>
                             <p className="text-[9px] text-white/30 uppercase font-black tracking-widest mt-0.5">{venue.average_check}</p>
@@ -142,16 +163,17 @@ export default function CreateImpulseSheet({ isOpen, initialData, onClose }) {
                           <ChevronRight size={16} className="text-white/10" />
                         </button>
                       ))}
+                      <button onClick={() => { setSelectedVenue(null); nextStep(); }} className="w-full p-4 mt-2 rounded-[20px] border border-dashed border-white/5 text-white/20 text-[11px] font-bold uppercase tracking-widest">
+                        Указать другое место
+                      </button>
                     </div>
                   </motion.div>
                 )}
 
+                {/* ШАГ 2: ВАЙБ И ВРЕМЯ */}
                 {step === 2 && (
                   <motion.div key="step2" variants={STEP_VARIANTS} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }}>
-                    <h2 className="text-2xl font-black text-white tracking-tighter mb-1">Настроение и время</h2>
-                    <p className="text-white/40 text-xs mb-6 font-medium">Когда и в каком вайбе?</p>
-                    
-                    <div className="grid grid-cols-2 gap-2 mb-6">
+                    <div className="grid grid-cols-2 gap-2 mb-8">
                       {VIBES.map(v => (
                         <button key={v.id} onClick={() => setVibe(v.id)} className={clsx("p-4 rounded-[28px] border flex flex-col items-start gap-2 transition-all", vibe === v.id ? "bg-white text-black border-white" : "bg-white/[0.03] border-white/5 text-white/60")}>
                           <v.icon size={18} className={vibe === v.id ? "text-black" : v.color} />
@@ -161,42 +183,38 @@ export default function CreateImpulseSheet({ isOpen, initialData, onClose }) {
                     </div>
 
                     <div className="space-y-2">
-                      <h3 className="text-[9px] font-black text-white/20 uppercase tracking-widest mb-2 ml-1">Планируемое время</h3>
-                      <div className="p-1 bg-white/[0.03] rounded-2xl border border-white/5 flex flex-wrap gap-1">
+                      <h3 className="text-[9px] font-black text-white/20 uppercase tracking-widest mb-3 ml-1">Когда планируете?</h3>
+                      <div className="p-1 bg-white/[0.03] rounded-2xl border border-white/5 flex gap-1">
                         {TIME_SLOTS.map(t => (
-                          <button key={t} onClick={() => setPlannedTime(t)} className={clsx("flex-1 py-3 px-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all", plannedTime === t ? "bg-white text-black" : "text-white/20")}>
+                          <button key={t} onClick={() => setPlannedTime(t)} className={clsx("flex-1 py-3 px-1 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all", plannedTime === t ? "bg-white text-black" : "text-white/20")}>
                             {t}
                           </button>
                         ))}
                       </div>
                     </div>
                     
-                    <button onClick={nextStep} className="w-full mt-8 py-4 rounded-2xl bg-white text-black font-black text-xs uppercase tracking-widest active:scale-95 transition-transform">Далее</button>
+                    <button onClick={nextStep} className="w-full mt-10 py-4 rounded-2xl bg-white text-black font-black text-[11px] uppercase tracking-widest active:scale-95 transition-transform">Далее</button>
                   </motion.div>
                 )}
 
+                {/* ШАГ 3: ПЛАНЫ */}
                 {step === 3 && (
                   <motion.div key="step3" variants={STEP_VARIANTS} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }}>
-                    <h2 className="text-2xl font-black text-white tracking-tighter mb-1">Планы</h2>
-                    <p className="text-white/40 text-xs mb-6 font-medium">О чем этот импульс?</p>
-                    
                     <textarea 
                       autoFocus
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
-                      placeholder="Опишите ваши планы..."
-                      className="w-full h-36 bg-white/[0.03] border border-white/10 rounded-[28px] p-5 text-white text-base font-medium focus:outline-none focus:border-primary/40 transition-all resize-none"
+                      placeholder="Опишите ваши планы на эту встречу..."
+                      className="w-full h-40 bg-white/[0.03] border border-white/10 rounded-[28px] p-6 text-white text-base font-medium focus:outline-none focus:border-primary/40 transition-all resize-none shadow-inner"
                     />
                     
-                    <button onClick={nextStep} disabled={!message.trim()} className="w-full mt-6 py-4 rounded-2xl bg-white text-black font-black text-xs uppercase tracking-widest disabled:opacity-20 transition-all">Подтвердить</button>
+                    <button onClick={nextStep} disabled={!message.trim()} className="w-full mt-6 py-4 rounded-2xl bg-white text-black font-black text-[11px] uppercase tracking-widest disabled:opacity-20 transition-all">Подтвердить</button>
                   </motion.div>
                 )}
 
+                {/* ШАГ 4: ПРИВАТНОСТЬ */}
                 {step === 4 && (
                   <motion.div key="step4" variants={STEP_VARIANTS} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }}>
-                    <h2 className="text-2xl font-black text-white tracking-tighter mb-1">Приватность</h2>
-                    <p className="text-white/40 text-xs mb-6 font-medium">Кто увидит твой импульс?</p>
-                    
                     <div className="space-y-2">
                       {[
                         { id: 'everyone', label: 'Для всех', desc: 'Виден всем в радиусе 2км', icon: Users },
@@ -213,27 +231,25 @@ export default function CreateImpulseSheet({ isOpen, initialData, onClose }) {
                       ))}
                     </div>
                     
-                    <button onClick={nextStep} className="w-full mt-8 py-4 rounded-2xl bg-white text-black font-black text-xs uppercase tracking-widest active:scale-95 transition-transform">К просмотру</button>
+                    <button onClick={nextStep} className="w-full mt-10 py-4 rounded-2xl bg-white text-black font-black text-[11px] uppercase tracking-widest active:scale-95 transition-transform">К просмотру</button>
                   </motion.div>
                 )}
 
+                {/* ШАГ 5: РЕЗЮМЕ */}
                 {step === 5 && (
                   <motion.div key="step5" variants={STEP_VARIANTS} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }}>
-                    <h2 className="text-2xl font-black text-white tracking-tighter mb-1">Резюме</h2>
-                    <p className="text-white/40 text-xs mb-6 font-medium">Проверьте детали перед публикацией</p>
-                    
                     <div className="bg-white/[0.03] border border-white/5 rounded-[32px] p-6 mb-6 relative overflow-hidden">
                        <div className="flex items-center gap-2 mb-3">
                          <div className="px-2 py-0.5 bg-primary/20 text-primary rounded-md text-[9px] font-black uppercase tracking-tighter">{vibe}</div>
                          <div className="px-2 py-0.5 bg-white/10 text-white/40 rounded-md text-[9px] font-black uppercase tracking-tighter">{plannedTime}</div>
                        </div>
-                       <p className="text-lg font-bold text-white mb-4 leading-relaxed">"{message}"</p>
+                       <p className="text-lg font-bold text-white mb-5 leading-relaxed">"{message}"</p>
                        <div className="flex items-center gap-1.5 text-white/30 text-[10px] font-bold uppercase tracking-widest">
                           <MapPin size={12} className="text-primary" /> {selectedVenue?.name || "Моя геопозиция"}
                        </div>
                     </div>
 
-                    <div className="flex gap-2 mb-6">
+                    <div className="flex gap-2 mb-8">
                        <button onClick={() => setIsGhost(!isGhost)} className={clsx("flex-1 p-3 rounded-2xl border flex items-center justify-center gap-2 transition-all", isGhost ? "bg-white text-black border-white" : "bg-white/[0.03] border-white/10 text-white/40")}>
                           <Ghost size={16} />
                           <span className="text-[9px] font-bold uppercase tracking-widest">Ghost</span>
@@ -246,9 +262,9 @@ export default function CreateImpulseSheet({ isOpen, initialData, onClose }) {
 
                     <motion.button 
                       whileTap={{ scale: 0.98 }} onClick={handleCreate} disabled={isSending}
-                      className="w-full py-4 rounded-[24px] bg-primary text-white font-black text-lg flex items-center justify-center gap-2 shadow-2xl shadow-primary/40"
+                      className="w-full py-5 rounded-[24px] bg-primary text-white font-black text-lg flex items-center justify-center gap-2 shadow-2xl shadow-primary/40"
                     >
-                      {isSending ? '...' : <>Опубликовать <Send size={20} /></>}
+                      {isSending ? 'Публикация...' : <>Опубликовать <Send size={20} /></>}
                     </motion.button>
                   </motion.div>
                 )}
