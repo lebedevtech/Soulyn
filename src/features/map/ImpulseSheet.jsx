@@ -1,126 +1,115 @@
-import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { X, MessageCircle, Star, MapPin, Trash2, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, MapPin, Send, CheckCircle2 } from 'lucide-react'; // Добавил иконки
+import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import clsx from 'clsx';
 
-// PREMIUM SHEET PHYSICS
-const SHEET_TRANSITION = { duration: 0.4, ease: [0.25, 1, 0.5, 1] }; 
+const SHEET_TRANSITION = { duration: 0.4, ease: [0.25, 1, 0.5, 1] };
 
 export default function ImpulseSheet({ impulse, onClose }) {
   const { user } = useAuth();
-  const [requestStatus, setRequestStatus] = useState(null); 
-  const [loading, setLoading] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [hasSent, setHasSent] = useState(false);
 
-  useEffect(() => {
-    if (impulse && user && impulse.user_id !== user.id) {
-      checkRequestStatus();
-    } else {
-      setRequestStatus(null);
+  // Логика отправки отклика
+  const handleConnect = async () => {
+    if (!user || isSending) return;
+    setIsSending(true);
+
+    try {
+      // 1. Создаем матч со статусом 'pending' (ожидает подтверждения)
+      const { error } = await supabase.from('matches').insert([{
+        initiator_id: impulse.user_id, // Тот, кто создал импульс
+        requester_id: user.id,         // Тот, кто откликается (я)
+        impulse_id: impulse.id,
+        status: 'pending'
+      }]);
+
+      if (!error) {
+        setHasSent(true);
+        // Через 1.5 сек закрываем шторку
+        setTimeout(() => {
+          onClose();
+          setHasSent(false);
+        }, 1500);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSending(false);
     }
-    setShowDeleteConfirm(false);
-  }, [impulse, user]);
-
-  const checkRequestStatus = async () => {
-    const { data } = await supabase.from('matches').select('status').eq('impulse_id', impulse.id).eq('requester_id', user.id).maybeSingle();
-    if (data) setRequestStatus(data.status);
-    else setRequestStatus(null);
   };
 
-  const handleJoin = async () => {
-    if (!user) return;
-    setLoading(true);
-    const { error } = await supabase.from('matches').insert({
-      impulse_id: impulse.id, initiator_id: impulse.user_id, requester_id: user.id, status: 'pending'
-    });
-    if (!error) setRequestStatus('pending');
-    setLoading(false);
-  };
-
-  const handleDelete = async () => {
-    setLoading(true);
-    const { error } = await supabase.from('impulses').delete().eq('id', impulse.id);
-    if (!error) onClose();
-    setLoading(false);
-  };
-
-  // if (!impulse) return null; — убрали, родитель контролирует
-
-  const author = impulse.users || {};
-  const isOwner = user?.id === impulse.user_id;
+  if (!impulse) return null;
+  const author = impulse.users || { first_name: 'Ghost', avatar_url: null };
 
   return (
     <>
+      {/* Backdrop: Z-100 (перекрывает меню) */}
       <motion.div 
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        initial={{ opacity: 0 }} 
+        animate={{ opacity: 1 }} 
+        exit={{ opacity: 0 }}
         onClick={onClose}
-        className="absolute inset-0 z-40 bg-black/60 backdrop-blur-sm"
+        className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm"
       />
       
+      {/* Sheet: Z-110, Fixed Bottom */}
       <motion.div 
         initial={{ y: "100%" }} 
         animate={{ y: 0 }} 
         exit={{ y: "100%" }}
         transition={SHEET_TRANSITION}
-        className="absolute bottom-0 left-0 right-0 z-50 bg-[#121212] rounded-t-[32px] border-t border-white/10 overflow-hidden shadow-2xl"
+        className="fixed bottom-0 left-0 right-0 z-[110] bg-[#121212] rounded-t-[32px] border-t border-white/10 p-6 pb-12 shadow-2xl overflow-hidden"
       >
-        {showDeleteConfirm ? (
-           <div className="p-8 pb-12 flex flex-col items-center text-center animate-in fade-in zoom-in duration-200">
-             <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mb-4 text-red-500"><AlertCircle size={32} /></div>
-             <h3 className="text-2xl font-black text-white mb-2">Удалить импульс?</h3>
-             <p className="text-white/50 mb-8 font-medium">Это действие нельзя отменить.</p>
-             <div className="w-full grid grid-cols-2 gap-3">
-               <button onClick={() => setShowDeleteConfirm(false)} className="py-4 rounded-2xl bg-white/5 font-bold text-white">Отмена</button>
-               <button onClick={handleDelete} disabled={loading} className="py-4 rounded-2xl bg-red-500 text-white font-bold">{loading ? '...' : 'Удалить'}</button>
-             </div>
-           </div>
-        ) : (
-          <>
-            <div className="w-full flex justify-center pt-3 pb-1">
-              <div className="w-12 h-1.5 bg-white/20 rounded-full" />
-            </div>
+        <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-8" />
 
-            <div className="relative px-6 pb-6">
-              <div className="flex justify-between items-start mt-2">
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-full border-2 border-primary/20 p-1 relative">
-                    <img src={author.avatar_url} className="w-full h-full rounded-full object-cover" alt="" />
-                    {author.is_premium && <div className="absolute -top-1 -right-1 bg-black rounded-full p-1.5 border border-yellow-500"><Star size={12} className="text-yellow-400 fill-yellow-400" /></div>}
-                  </div>
-                  <div>
-                    <h2 className={clsx("text-2xl font-black leading-none", author.is_premium ? "text-yellow-400" : "text-white")}>{author.first_name}</h2>
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="px-2 py-0.5 rounded bg-white/10 text-[10px] font-bold uppercase text-white tracking-wider border border-white/5">CEO & Founder</span>
-                    </div>
-                  </div>
-                </div>
-                <button onClick={onClose} className="p-2 bg-white/5 rounded-full text-white/40"><X size={24} /></button>
-              </div>
+        <div className="flex flex-col items-center text-center mb-8">
+          <div className="w-24 h-24 rounded-full border-4 border-[#1C1C1E] p-1 bg-gradient-to-br from-primary to-purple-900 shadow-2xl mb-4 relative">
+             <img src={author.avatar_url || 'https://i.pravatar.cc/300'} className="w-full h-full rounded-full object-cover" alt="" />
+             {/* Статус онлайн (фейк для красоты) */}
+             <div className="absolute bottom-1 right-1 w-5 h-5 bg-green-500 border-4 border-[#1C1C1E] rounded-full" />
+          </div>
+          
+          <h2 className="text-3xl font-black text-white tracking-tight mb-2">{author.first_name}</h2>
+          
+          {impulse.venues ? (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/5 text-primary">
+              <MapPin size={14} fill="currentColor" />
+              <span className="text-sm font-bold uppercase tracking-wide">{impulse.venues.name}</span>
             </div>
+          ) : (
+            <p className="text-white/40 text-sm font-medium">~500м от вас</p>
+          )}
+        </div>
 
-            <div className="px-6 pb-8">
-              <div className="p-5 rounded-[24px] bg-white/5 border border-white/5 mb-6">
-                 <p className="text-white text-lg font-medium leading-relaxed">"{impulse.message}"</p>
-                 {impulse.venues && <div className="mt-4 pt-4 border-t border-white/10 flex items-center gap-2 text-primary"><MapPin size={16} /><span className="font-bold text-sm uppercase tracking-widest">{impulse.venues.name}</span></div>}
-              </div>
+        <div className="bg-white/5 border border-white/5 rounded-3xl p-6 mb-8 relative overflow-hidden">
+           <p className="text-xl text-white font-medium leading-relaxed relative z-10">"{impulse.message}"</p>
+           <div className="absolute -top-10 -left-10 w-32 h-32 bg-primary/20 blur-3xl rounded-full" />
+        </div>
 
-              {isOwner ? (
-                <motion.button whileTap={{ scale: 0.98 }} onClick={() => setShowDeleteConfirm(true)} className="w-full py-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 font-bold text-lg flex items-center justify-center gap-2">Удалить импульс <Trash2 size={20} /></motion.button>
-              ) : (
-                requestStatus === 'pending' ? (
-                  <button disabled className="w-full py-4 rounded-2xl bg-white/5 text-white/40 font-bold text-lg flex items-center justify-center gap-2"><Clock size={20} /> Запрос отправлен</button>
-                ) : requestStatus === 'accepted' ? (
-                  <button className="w-full py-4 rounded-2xl bg-green-500 text-white font-bold text-lg flex items-center justify-center gap-2 shadow-lg"><MessageCircle size={20} /> Открыть чат</button>
-                ) : (
-                  <motion.button whileTap={{ scale: 0.98 }} onClick={handleJoin} disabled={loading} className="w-full py-4 rounded-2xl bg-primary text-white font-bold text-lg flex items-center justify-center gap-2 shadow-lg shadow-primary/20">{loading ? '...' : <>Погнали! <CheckCircle size={20} /></>}</motion.button>
-                )
-              )}
-              
-              {!showDeleteConfirm && <p className="text-center text-white/20 text-xs mt-4 font-medium">Импульс исчезнет через 4 часа</p>}
-            </div>
-          </>
+        {/* КНОПКА ОТКЛИКА */}
+        {user?.id !== impulse.user_id && (
+          <motion.button 
+            whileTap={{ scale: 0.98 }}
+            onClick={handleConnect}
+            disabled={isSending || hasSent}
+            className={clsx(
+              "w-full py-5 rounded-[24px] font-bold text-lg flex items-center justify-center gap-3 transition-all",
+              hasSent 
+                ? "bg-green-500 text-white shadow-[0_0_20px_rgba(34,197,94,0.4)]"
+                : "bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+            )}
+          >
+            {hasSent ? (
+              <>Отклик отправлен <CheckCircle2 size={24} /></>
+            ) : isSending ? (
+              "Отправка..."
+            ) : (
+              <>Откликнуться <Send size={24} /></>
+            )}
+          </motion.button>
         )}
       </motion.div>
     </>
