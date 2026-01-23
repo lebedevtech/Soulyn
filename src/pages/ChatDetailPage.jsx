@@ -24,24 +24,24 @@ export default function ChatDetailPage() {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [partner, setPartner] = useState(null);
-  const [showMenu, setShowMenu] = useState(false); // Меню действий
+  const [showMenu, setShowMenu] = useState(false);
   const bottomRef = useRef(null);
 
-  // Помечаем сообщения как прочитанные
+  // 1. Помечаем прочитанным при входе
   const markAsRead = async () => {
     if (!user || !id) return;
     await supabase.from('messages')
       .update({ is_read: true })
       .eq('match_id', id)
-      .neq('sender_id', user.id) // Только чужие
-      .eq('is_read', false);     // Только непрочитанные
+      .neq('sender_id', user.id)
+      .eq('is_read', false);
   };
 
   useEffect(() => {
     if (!user || !id) return;
 
     const fetchChatData = async () => {
-      // 1. Инфо о матче
+      // Загрузка партнера
       const { data: match } = await supabase
         .from('matches')
         .select(`initiator:initiator_id(id, first_name, avatar_url), requester:requester_id(id, first_name, avatar_url)`)
@@ -53,7 +53,7 @@ export default function ChatDetailPage() {
         setPartner(partnerData);
       }
 
-      // 2. История сообщений
+      // Загрузка сообщений
       const { data: msgs } = await supabase
         .from('messages')
         .select('*')
@@ -62,13 +62,13 @@ export default function ChatDetailPage() {
 
       if (msgs) {
         setMessages(msgs);
-        markAsRead(); // Сразу помечаем прочитанными
+        markAsRead(); // <--- Сразу читаем
       }
     };
 
     fetchChatData();
 
-    // 3. Подписка
+    // Подписка
     const channel = supabase.channel(`chat:${id}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `match_id=eq.${id}` }, (payload) => {
         setMessages((prev) => {
@@ -76,7 +76,7 @@ export default function ChatDetailPage() {
            return [...prev, payload.new];
         });
         
-        // Если пришло сообщение от партнера, пока мы в чате — сразу читаем
+        // Если сообщение от партнера и мы в чате — сразу читаем
         if (payload.new.sender_id !== user.id) {
             markAsRead();
         }
@@ -117,10 +117,11 @@ export default function ChatDetailPage() {
 
   // Удаление чата
   const handleDeleteChat = async () => {
-    if (!window.confirm('Удалить этот чат? Это действие нельзя отменить.')) return;
+    if (!window.confirm('Удалить переписку?')) return;
     
-    // Удаляем матч (каскадно должны удалиться сообщения, если настроено в БД, иначе удаляем вручную)
+    // Удаляем сообщения (если в базе нет cascade delete)
     await supabase.from('messages').delete().eq('match_id', id);
+    // Удаляем сам матч
     await supabase.from('matches').delete().eq('id', id);
     
     navigate('/chats');
@@ -128,54 +129,56 @@ export default function ChatDetailPage() {
 
   return (
     <div className="w-full h-full bg-black flex flex-col relative">
-      {/* HEADER: SAFE AREA + CENTERING */}
-      <div className="absolute top-0 left-0 right-0 z-20 bg-black/80 backdrop-blur-md border-b border-white/5 pt-[calc(env(safe-area-inset-top)+12px)] pb-4 px-4">
-        <div className="relative flex items-center justify-between h-10">
+      
+      {/* HEADER: FIXED + HARDCODED PADDING */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-xl border-b border-white/5 pt-14 pb-3">
+        <div className="relative w-full h-10 flex items-center px-4">
           
-          {/* Left: Back Button */}
-          <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-white active:opacity-50 transition-opacity z-10">
+          {/* Back Button */}
+          <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-white active:opacity-50 z-20 relative">
             <ArrowLeft size={24} />
           </button>
           
-          {/* Center: Partner Info (Absolute centering) */}
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center pointer-events-none">
-            <span className="font-bold text-white text-[17px] leading-none">{partner?.first_name || '...'}</span>
-            <span className="text-[11px] text-green-500 font-medium mt-1 leading-none">Online</span>
+          {/* CENTERED NAME: Absolute positioning for perfect center */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center pointer-events-none z-10">
+            <span className="font-bold text-white text-[17px] leading-tight">{partner?.first_name || '...'}</span>
+            <span className="text-[10px] text-green-500 font-bold tracking-wide">ONLINE</span>
           </div>
           
-          {/* Right: Actions */}
-          <div className="flex gap-2 z-10">
-             <button className="p-2 text-white/50 hover:text-white"><Phone size={20} /></button>
-             <button onClick={() => setShowMenu(!showMenu)} className="p-2 text-white/50 hover:text-white"><MoreVertical size={20} /></button>
+          {/* RIGHT ACTIONS: Margin Right to avoid Telegram Menu */}
+          <div className="ml-auto flex gap-1 z-20 relative mr-10"> 
+             <button className="p-2 text-white/40 hover:text-white transition-colors"><Phone size={20} /></button>
+             <button onClick={() => setShowMenu(!showMenu)} className="p-2 text-white/40 hover:text-white transition-colors"><MoreVertical size={20} /></button>
           </div>
         </div>
       </div>
 
-      {/* DROPDOWN MENU */}
+      {/* Dropdown Menu */}
       <AnimatePresence>
         {showMenu && (
           <>
-            <div className="fixed inset-0 z-30" onClick={() => setShowMenu(false)} />
+            <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
             <motion.div 
               initial={{ opacity: 0, scale: 0.9, y: -10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: -10 }}
-              className="absolute top-[calc(env(safe-area-inset-top)+60px)] right-4 z-40 bg-[#1C1C1E] border border-white/10 rounded-xl shadow-2xl overflow-hidden min-w-[160px]"
+              className="fixed top-24 right-16 z-50 bg-[#1C1C1E] border border-white/10 rounded-xl shadow-2xl overflow-hidden min-w-[160px]"
             >
               <button 
                 onClick={handleDeleteChat}
-                className="w-full p-3 flex items-center gap-3 text-red-500 hover:bg-white/5 text-sm font-medium"
+                className="w-full p-4 flex items-center gap-3 text-red-500 hover:bg-white/5 text-sm font-bold active:bg-white/10"
               >
-                <Trash2 size={16} /> Удалить чат
+                <Trash2 size={18} /> Удалить чат
               </button>
             </motion.div>
           </>
         )}
       </AnimatePresence>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 pt-32"> {/* pt-32 compensates for header */}
-        {messages.length === 0 && partner && <p className="text-center text-white/30 text-sm mt-10">Начните общение с {partner.first_name}...</p>}
+      {/* Messages: Отступ сверху pt-36, чтобы компенсировать Fixed Header */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 pt-36 pb-32">
+        {messages.length === 0 && partner && <p className="text-center text-white/30 text-sm mt-10">Нет сообщений</p>}
+        
         {messages.map((msg) => {
           const isMe = msg.sender_id === user?.id;
           return (
@@ -202,7 +205,7 @@ export default function ChatDetailPage() {
       </div>
 
       {/* Input */}
-      <div className="p-4 bg-black border-t border-white/10 pb-8 safe-area-bottom">
+      <div className="fixed bottom-0 left-0 right-0 bg-black border-t border-white/10 p-4 pb-8 z-50">
         <div className="flex gap-2 items-center bg-[#1C1C1E] rounded-full p-2 pl-4">
           <input 
             value={newMessage}
@@ -214,7 +217,7 @@ export default function ChatDetailPage() {
           <motion.button 
             whileTap={{ scale: 0.9 }}
             onClick={handleSend}
-            className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white shrink-0 shadow-[0_0_10px_rgba(139,92,246,0.3)]"
+            className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white shrink-0 shadow-lg"
           >
             <Send size={18} />
           </motion.button>

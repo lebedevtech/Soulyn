@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { MessageCircle, Search, ChevronRight } from 'lucide-react';
+import { MessageCircle, Search } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
-
-const TRANSITION_EASE = [0.25, 0.1, 0.25, 1];
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -17,13 +15,8 @@ const containerVariants = {
 
 const cardVariants = {
   hidden: { y: 20, opacity: 0, scale: 1 },
-  visible: { 
-    y: 0, 
-    opacity: 1, 
-    scale: 1,
-    transition: { duration: 0.4, ease: TRANSITION_EASE } 
-  },
-  tap: { scale: 0.97, transition: { duration: 0.1 } }
+  visible: { y: 0, opacity: 1, scale: 1, transition: { duration: 0.3 } },
+  tap: { scale: 0.97 }
 };
 
 export default function ChatPage() {
@@ -41,8 +34,7 @@ export default function ChatPage() {
       const { data: matches } = await supabase
         .from('matches')
         .select(`
-          id, 
-          status, 
+          id, status, 
           initiator:initiator_id(id, first_name, avatar_url), 
           requester:requester_id(id, first_name, avatar_url), 
           impulse:impulse_id(message)
@@ -58,14 +50,14 @@ export default function ChatPage() {
 
       const matchIds = matches.map(m => m.id);
 
-      // 2. Сообщения для превью
+      // 2. Сообщения
       const { data: messages } = await supabase
         .from('messages')
         .select('*')
         .in('match_id', matchIds)
         .order('created_at', { ascending: true });
 
-      // 3. Сборка данных
+      // 3. Сборка
       const processedChats = matches.map(match => {
         const partner = match.initiator.id === user.id ? match.requester : match.initiator;
         const chatMessages = messages?.filter(m => m.match_id === match.id) || [];
@@ -86,68 +78,48 @@ export default function ChatPage() {
       });
 
       processedChats.sort((a, b) => b.lastActivity - a.lastActivity);
-
       setChats(processedChats);
       setLoading(false);
     };
 
     fetchChats();
-
-    const channel = supabase.channel('chats_list')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => {
-        fetchChats(); 
-      })
-      .subscribe();
-
+    const channel = supabase.channel('chats_list').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, fetchChats).subscribe();
     return () => supabase.removeChannel(channel);
   }, [user]);
 
-  // Фильтр
   const filteredChats = chats.filter(chat => {
     const name = chat.partner?.first_name || '';
     const msg = chat.lastMessage?.content || chat.impulse?.message || '';
     return name.toLowerCase().includes(searchQuery.toLowerCase()) || msg.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
-  if (loading) {
-    return <div className="w-full h-full bg-black flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
-  }
-
   return (
     <div className="relative w-full h-full bg-black flex flex-col">
-      {/* HEADER: SAFE AREA FIX */}
-      <div className="absolute top-0 left-0 right-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md border-b border-white/5 pt-[calc(env(safe-area-inset-top)+12px)] pb-3">
+      {/* HEADER: HARDCODED SAFE AREA */}
+      <div className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md border-b border-white/5 pt-16 pb-4">
         <span className="text-[17px] font-bold text-white tracking-tight">Чаты</span>
       </div>
 
       <div className="absolute bottom-0 left-0 right-0 h-32 z-10 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none" />
 
-      {/* Content: pt-36 (Safe area + header height) */}
-      <div className="flex-1 overflow-y-auto no-scrollbar pt-36 pb-32 px-4 relative z-0">
+      {/* Content: Padded Top */}
+      <div className="flex-1 overflow-y-auto no-scrollbar pt-40 pb-32 px-4 relative z-0">
         
         <div className="mb-6 relative">
           <div className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30">
             <Search size={18} />
           </div>
           <input 
-            type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Поиск чатов"
-            className="w-full h-10 bg-white/5 border border-white/10 rounded-[12px] pl-11 pr-4 text-white text-[15px] placeholder:text-white/30 focus:outline-none focus:border-white/20 transition-colors"
+            className="w-full h-10 bg-white/5 border border-white/10 rounded-[12px] pl-11 pr-4 text-white text-[15px] placeholder:text-white/30 focus:outline-none focus:border-white/20"
           />
         </div>
 
         {filteredChats.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 text-center opacity-50">
-            {searchQuery ? (
-               <p className="text-white/40 font-medium">Ничего не найдено</p>
-            ) : (
-              <>
-                <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4 text-white/20"><MessageCircle size={28} /></div>
-                <p className="text-white/40 font-medium">Пока нет активных чатов</p>
-              </>
-            )}
+             <p className="text-white/40 font-medium">Нет чатов</p>
           </div>
         ) : (
           <motion.div className="space-y-2" variants={containerVariants} initial="hidden" animate="visible">
@@ -161,9 +133,11 @@ export default function ChatPage() {
               >
                 <div className="relative">
                   <img src={chat.partner?.avatar_url || 'https://i.pravatar.cc/150'} className="w-14 h-14 rounded-full object-cover border border-white/10" alt=""/>
-                  {/* Если есть непрочитанные - показываем синюю обводку или точку */}
+                  {/* UNREAD INDICATOR */}
                   {chat.unreadCount > 0 && (
-                     <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full border-2 border-[#121212]" />
+                     <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full border-2 border-[#121212] flex items-center justify-center">
+                        <div className="w-1.5 h-1.5 bg-white rounded-full" />
+                     </div>
                   )}
                 </div>
 
@@ -179,7 +153,7 @@ export default function ChatPage() {
                     <p className={chat.unreadCount > 0 ? "text-white text-[14px] truncate font-bold" : "text-white/50 text-[14px] truncate"}>
                       {chat.lastMessage 
                         ? (chat.lastMessage.sender_id === user.id ? `Вы: ${chat.lastMessage.content}` : chat.lastMessage.content)
-                        : <span className="text-primary italic">Новый мэтч! Напишите первым ✨</span>
+                        : <span className="text-primary italic">Новый мэтч!</span>
                       }
                     </p>
                     
