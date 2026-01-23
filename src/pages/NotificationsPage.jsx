@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Bell, Heart, Check, X, User } from 'lucide-react';
+import { Bell, Check, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
@@ -22,14 +22,14 @@ const itemVariants = {
 export default function NotificationsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [requests, setRequests] = useState([]); // Запросы на переписку (pending matches)
+  const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Загружаем реальные запросы
+  // 1. Загрузка входящих запросов
   useEffect(() => {
     if (!user) return;
     const fetchRequests = async () => {
-      // Ищем матчи, где Я — инициатор импульса, а статус 'pending'
+      // Ищем матчи, где Я — создатель импульса, а статус 'pending'
       const { data } = await supabase
         .from('matches')
         .select(`
@@ -39,7 +39,7 @@ export default function NotificationsPage() {
           requester:requester_id(id, first_name, avatar_url),
           impulse:impulse_id(message)
         `)
-        .eq('initiator_id', user.id) // Только те, где я автор импульса
+        .eq('initiator_id', user.id) 
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
 
@@ -49,10 +49,9 @@ export default function NotificationsPage() {
 
     fetchRequests();
 
-    // Подписка на новые запросы
+    // Подписка на обновления
     const channel = supabase.channel('requests')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'matches', filter: `initiator_id=eq.${user.id}` }, (payload) => {
-        // Чтобы обновить UI с данными юзера, лучше перезапросить (упрощение)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'matches', filter: `initiator_id=eq.${user.id}` }, () => {
         fetchRequests(); 
       })
       .subscribe();
@@ -60,19 +59,21 @@ export default function NotificationsPage() {
     return () => supabase.removeChannel(channel);
   }, [user]);
 
-  // Обработка: Принять
+  // 2. Логика ПРИНЯТИЯ заявки
   const handleAccept = async (matchId) => {
-    // 1. Обновляем статус на 'accepted'
-    await supabase.from('matches').update({ status: 'accepted' }).eq('id', matchId);
+    // Обновляем статус на 'accepted' — теперь это полноценный чат
+    const { error } = await supabase.from('matches').update({ status: 'accepted' }).eq('id', matchId);
     
-    // 2. Убираем из списка визуально
+    if (error) {
+        alert('Ошибка: ' + error.message);
+        return;
+    }
+
+    // Убираем из списка и переходим в чат
     setRequests(prev => prev.filter(r => r.id !== matchId));
-    
-    // 3. (Опционально) Сразу кидаем в чат
     navigate(`/chat/${matchId}`);
   };
 
-  // Обработка: Отклонить
   const handleDecline = async (matchId) => {
     await supabase.from('matches').delete().eq('id', matchId);
     setRequests(prev => prev.filter(r => r.id !== matchId));
@@ -106,7 +107,6 @@ export default function NotificationsPage() {
                 variants={itemVariants}
                 className="w-full p-4 rounded-[24px] bg-[#1C1C1E] border border-white/10 flex flex-col gap-3"
               >
-                {/* Header: User Info */}
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-white/10 overflow-hidden">
                     <img src={req.requester?.avatar_url || 'https://i.pravatar.cc/150'} className="w-full h-full object-cover" alt=""/>
@@ -119,7 +119,6 @@ export default function NotificationsPage() {
                   </div>
                 </div>
 
-                {/* Actions */}
                 <div className="flex gap-2 mt-1">
                   <button 
                     onClick={() => handleAccept(req.id)}

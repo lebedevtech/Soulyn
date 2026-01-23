@@ -1,5 +1,5 @@
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, MapPin, Send, CheckCircle2 } from 'lucide-react'; // Добавил иконки
+import { motion } from 'framer-motion';
+import { X, MapPin, Send, CheckCircle2 } from 'lucide-react';
 import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
@@ -12,30 +12,29 @@ export default function ImpulseSheet({ impulse, onClose }) {
   const [isSending, setIsSending] = useState(false);
   const [hasSent, setHasSent] = useState(false);
 
-  // Логика отправки отклика
+  // Логика: Создаем заявку на матч
   const handleConnect = async () => {
     if (!user || isSending) return;
     setIsSending(true);
 
     try {
-      // 1. Создаем матч со статусом 'pending' (ожидает подтверждения)
       const { error } = await supabase.from('matches').insert([{
-        initiator_id: impulse.user_id, // Тот, кто создал импульс
-        requester_id: user.id,         // Тот, кто откликается (я)
+        initiator_id: impulse.user_id, // Автор импульса
+        requester_id: user.id,         // Я (кто откликнулся)
         impulse_id: impulse.id,
-        status: 'pending'
+        status: 'pending'              // Статус: ожидает подтверждения
       }]);
 
-      if (!error) {
-        setHasSent(true);
-        // Через 1.5 сек закрываем шторку
-        setTimeout(() => {
-          onClose();
-          setHasSent(false);
-        }, 1500);
-      }
+      if (error) throw error;
+
+      setHasSent(true);
+      setTimeout(() => {
+        onClose();
+        setHasSent(false);
+      }, 1500);
     } catch (e) {
       console.error(e);
+      alert('Ошибка отправки отклика: ' + e.message);
     } finally {
       setIsSending(false);
     }
@@ -46,7 +45,7 @@ export default function ImpulseSheet({ impulse, onClose }) {
 
   return (
     <>
-      {/* Backdrop: Z-100 (перекрывает меню) */}
+      {/* BACKDROP: Z-100 (Перекрывает нижнее меню) */}
       <motion.div 
         initial={{ opacity: 0 }} 
         animate={{ opacity: 1 }} 
@@ -55,7 +54,7 @@ export default function ImpulseSheet({ impulse, onClose }) {
         className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm"
       />
       
-      {/* Sheet: Z-110, Fixed Bottom */}
+      {/* SHEET: Z-110, FIXED */}
       <motion.div 
         initial={{ y: "100%" }} 
         animate={{ y: 0 }} 
@@ -68,7 +67,6 @@ export default function ImpulseSheet({ impulse, onClose }) {
         <div className="flex flex-col items-center text-center mb-8">
           <div className="w-24 h-24 rounded-full border-4 border-[#1C1C1E] p-1 bg-gradient-to-br from-primary to-purple-900 shadow-2xl mb-4 relative">
              <img src={author.avatar_url || 'https://i.pravatar.cc/300'} className="w-full h-full rounded-full object-cover" alt="" />
-             {/* Статус онлайн (фейк для красоты) */}
              <div className="absolute bottom-1 right-1 w-5 h-5 bg-green-500 border-4 border-[#1C1C1E] rounded-full" />
           </div>
           
