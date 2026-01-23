@@ -1,44 +1,31 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send } from 'lucide-react';
-import { supabase } from '../../lib/supabase'; // Проверь, что путь правильный: выход на 2 уровня вверх
-import WebApp from '@twa-dev/sdk';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../context/AuthContext'; // Импортируем хук
 import clsx from 'clsx';
 
 export default function CreateImpulseSheet({ isOpen, onClose }) {
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
+  
+  // Получаем реального пользователя из базы!
+  const { user } = useAuth(); 
 
-  // Обработчик отправки
   const handleCreate = async () => {
-    if (!message.trim()) return;
+    if (!message.trim() || !user) return; // Если юзер не загрузился, не даем создать
     
     setIsSending(true);
 
-    // 1. Пытаемся достать данные из Телеграма
-    const tgUser = WebApp.initDataUnsafe?.user;
-
-    // 2. Формируем данные
-    const userData = {
-      username: tgUser?.first_name || 'Эльвир (Browser)',
-      avatar_url: tgUser?.photo_url || `https://i.pravatar.cc/150?u=${Math.random()}`,
-      is_premium: tgUser?.is_premium || false, 
-      tg_id: tgUser?.id || null
-    };
-
     const newImpulse = {
-      lat: 55.7558 + (Math.random() - 0.5) * 0.02,
+      user_id: user.id, // НАСТОЯЩИЙ UUID ИЗ БАЗЫ
+      lat: 55.7558 + (Math.random() - 0.5) * 0.02, // Пока рандом, GPS добавим следующим шагом
       lng: 37.6173 + (Math.random() - 0.5) * 0.02,
       message: message,
-      username: userData.username,
-      avatar_url: userData.avatar_url,
-      category: 'vip',
-      venue_name: 'Simach',
-      is_premium: userData.is_premium,
-      user_id: userData.tg_id 
+      // В будущем тут будет выбор заведения (venue_id)
+      is_ghost: false 
     };
 
-    // 3. Отправляем в Supabase
     const { error } = await supabase
       .from('impulses')
       .insert([newImpulse]);
@@ -47,10 +34,10 @@ export default function CreateImpulseSheet({ isOpen, onClose }) {
 
     if (error) {
       console.error('Ошибка отправки:', error);
-      alert('Не удалось создать импульс');
+      alert('Ошибка');
     } else {
       setMessage('');
-      onClose(); // Закрываем шторку
+      onClose();
     }
   };
 
@@ -58,20 +45,14 @@ export default function CreateImpulseSheet({ isOpen, onClose }) {
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Фон-затемнение */}
           <motion.div 
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 1 }} 
-            exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={onClose}
             className="absolute inset-0 z-40 bg-black/60 backdrop-blur-sm"
           />
           
-          {/* Шторка */}
           <motion.div 
-            initial={{ y: "100%" }} 
-            animate={{ y: 0 }} 
-            exit={{ y: "100%" }}
+            initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             className="absolute bottom-0 left-0 right-0 z-50 bg-[#121212] rounded-t-[40px] border-t border-white/10 p-6 pb-12"
           >
@@ -88,7 +69,7 @@ export default function CreateImpulseSheet({ isOpen, onClose }) {
               <textarea 
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Например: Кто на кофе в Dr. Живаго?"
+                placeholder={`Что делаем, ${user?.first_name}?`} // Персонализация
                 className="w-full h-32 bg-white/5 border border-white/10 rounded-3xl p-5 text-white placeholder:text-white/20 resize-none focus:outline-none focus:border-primary/50 text-lg font-medium"
               />
               
@@ -101,9 +82,7 @@ export default function CreateImpulseSheet({ isOpen, onClose }) {
                 )}
               >
                 {isSending ? 'Публикация...' : (
-                  <>
-                    Опубликовать <Send size={20} />
-                  </>
+                  <>Опубликовать <Send size={20} /></>
                 )}
               </button>
             </div>

@@ -3,7 +3,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import MapView from '../features/map/MapView';
 import ImpulseSheet from '../features/map/ImpulseSheet';
-import { LayoutGrid, Map as MapIcon, Coffee, Pizza, Film, Star, MapPin, ChevronRight } from 'lucide-react';
+import { 
+  LayoutGrid, 
+  Map as MapIcon, 
+  Coffee, 
+  Pizza, 
+  Film, 
+  Star, 
+  MapPin, 
+  ChevronRight 
+} from 'lucide-react';
 import clsx from 'clsx';
 
 const CATEGORIES = [
@@ -19,21 +28,58 @@ export default function MapPage() {
   const [impulses, setImpulses] = useState([]);
 
   useEffect(() => {
+    // 1. Загрузка импульсов с данными пользователей и заведений
     const fetchImpulses = async () => {
       const { data, error } = await supabase
         .from('impulses')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select(`
+          *,
+          users (
+            first_name,
+            avatar_url,
+            is_premium,
+            club_status
+          ),
+          venues (
+            name,
+            category
+          )
+        `)
+        .order('created_at', { ascending: false }); // Свежие сверху
       
       if (!error) setImpulses(data || []);
+      else console.error('Ошибка загрузки импульсов:', error);
     };
 
     fetchImpulses();
 
+    // 2. Подписка на новые импульсы (Realtime)
     const channel = supabase
       .channel('public:impulses')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'impulses' }, (payload) => {
-        setImpulses((current) => [payload.new, ...current]);
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'impulses' }, async (payload) => {
+        // Когда приходит новый импульс, у нас есть только его ID и данные самой таблицы.
+        // Нам нужно подтянуть данные юзера (имя, фото), чтобы красиво отобразить.
+        const { data: newImpulseWithUser } = await supabase
+          .from('impulses')
+          .select(`
+            *,
+            users (
+              first_name,
+              avatar_url,
+              is_premium,
+              club_status
+            ),
+            venues (
+              name,
+              category
+            )
+          `)
+          .eq('id', payload.new.id)
+          .single();
+
+        if (newImpulseWithUser) {
+          setImpulses((current) => [newImpulseWithUser, ...current]);
+        }
       })
       .subscribe();
 
@@ -49,21 +95,22 @@ export default function MapPage() {
         <MapView impulses={impulses} onImpulseClick={setSelectedImpulse} />
       </div>
 
-      {/* РЕЖИМ ОБЗОРА */}
+      {/* РЕЖИМ ОБЗОРА (List View) */}
       <AnimatePresence>
         {viewMode === 'list' && (
           <div className="absolute inset-0 z-10">
-            {/* ВЕРХНИЙ БАРЬЕР (Увеличили высоту градиента до h-48 из-за сдвига шапки) */}
+            {/* ВЕРХНИЙ БАРЬЕР (Градиент) */}
             <div className="absolute top-0 left-0 right-0 h-48 z-20 pointer-events-none bg-gradient-to-b from-black via-black/80 to-transparent backdrop-blur-md" />
             
             {/* НИЖНИЙ БАРЬЕР */}
             <div className="absolute bottom-0 left-0 right-0 h-48 z-20 pointer-events-none bg-gradient-to-t from-black via-black/95 to-transparent" />
 
-            {/* КОНТЕНТ (Увеличили отступ pt-32 -> pt-44, чтобы не наезжал на новую шапку) */}
+            {/* КОНТЕНТ (Отступ pt-44 чтобы не наезжать на Header) */}
             <motion.div 
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="w-full h-full bg-black/60 backdrop-blur-2xl overflow-y-auto no-scrollbar pt-44 pb-48 px-6 relative z-10"
             >
+              {/* Категории */}
               <section className="mb-10">
                 <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mb-5 ml-1">Категории</h3>
                 <div className="grid grid-cols-2 gap-3">
@@ -79,45 +126,62 @@ export default function MapPage() {
                 </div>
               </section>
 
+              {/* Список Импульсов */}
               <section>
                 <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mb-6 ml-1">Актуально сейчас</h3>
                 <div className="space-y-3">
                   {impulses.length === 0 && (
                     <p className="text-white/30 text-center py-4 text-sm">Пока нет активных импульсов...</p>
                   )}
-                  {impulses.map((imp) => (
-                    <button 
-                      key={imp.id} 
-                      onClick={() => setSelectedImpulse(imp)}
-                      className={clsx(
-                        "w-full glass-panel p-4 rounded-[30px] flex items-center gap-4 active:scale-[0.98] transition-all text-left",
-                        imp.is_premium && "border-yellow-500/30 shadow-[0_0_15px_rgba(234,179,8,0.1)]"
-                      )}
-                    >
-                      <div className="w-14 h-14 rounded-full border-2 border-primary/20 p-0.5 shrink-0 shadow-lg">
-                        <img 
-                          src={imp.avatar_url || 'https://i.pravatar.cc/150'} 
-                          className="w-full h-full rounded-full object-cover" 
-                          alt=""
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-center mb-1">
-                          <p className={clsx("font-bold text-base truncate", imp.is_premium ? "text-yellow-400" : "text-white")}>
-                            {imp.username}
-                          </p>
-                          <span className="text-[10px] font-black text-primary uppercase">{imp.dist || '100м'}</span>
-                        </div>
-                        <p className="text-white/60 text-sm line-clamp-1 mb-1 font-medium">{imp.message}</p>
-                        {imp.venue_name && (
-                          <div className="flex items-center gap-1 text-[10px] text-white/30 font-black uppercase">
-                            <MapPin size={10} className="text-primary" /> {imp.venue_name}
-                          </div>
+                  
+                  {impulses.map((imp) => {
+                    // Безопасное получение данных (если вдруг юзер удален)
+                    const user = imp.users || { first_name: 'Неизвестный', avatar_url: null, is_premium: false };
+                    const venueName = imp.venues?.name || 'Свободная локация';
+
+                    return (
+                      <button 
+                        key={imp.id} 
+                        onClick={() => setSelectedImpulse(imp)}
+                        className={clsx(
+                          "w-full glass-panel p-4 rounded-[30px] flex items-center gap-4 active:scale-[0.98] transition-all text-left",
+                          // Подсветка для Premium пользователей или VIP статуса клуба
+                          (user.is_premium || user.club_status === 'gold') && "border-yellow-500/30 shadow-[0_0_15px_rgba(234,179,8,0.1)]"
                         )}
-                      </div>
-                      <ChevronRight size={18} className="text-white/10" />
-                    </button>
-                  ))}
+                      >
+                        <div className="w-14 h-14 rounded-full border-2 border-primary/20 p-0.5 shrink-0 shadow-lg relative">
+                          <img 
+                            src={user.avatar_url || 'https://i.pravatar.cc/150'} 
+                            className="w-full h-full rounded-full object-cover" 
+                            alt={user.first_name}
+                          />
+                          {/* Иконка короны для премиум (опционально) */}
+                          {user.is_premium && (
+                            <div className="absolute -top-1 -right-1 bg-black rounded-full p-1 border border-yellow-500/50">
+                              <Star size={10} className="text-yellow-400 fill-yellow-400" />
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-center mb-1">
+                            <p className={clsx("font-bold text-base truncate", user.is_premium ? "text-yellow-400" : "text-white")}>
+                              {user.first_name}
+                            </p>
+                            {/* Дистанцию пока хардкодим, GPS добавим на след. этапе */}
+                            <span className="text-[10px] font-black text-primary uppercase">~500м</span>
+                          </div>
+                          
+                          <p className="text-white/60 text-sm line-clamp-1 mb-1 font-medium">{imp.message}</p>
+                          
+                          <div className="flex items-center gap-1 text-[10px] text-white/30 font-black uppercase">
+                            <MapPin size={10} className="text-primary" /> {venueName}
+                          </div>
+                        </div>
+                        <ChevronRight size={18} className="text-white/10" />
+                      </button>
+                    );
+                  })}
                 </div>
               </section>
             </motion.div>
@@ -125,7 +189,7 @@ export default function MapPage() {
         )}
       </AnimatePresence>
 
-      {/* HEADER (Сдвинули вниз: pt-14 -> pt-24) */}
+      {/* HEADER (Отступ pt-24 для Telegram) */}
       <div className="absolute top-0 left-0 right-0 z-30 pt-24 px-6 flex items-center justify-between pointer-events-none">
         <div className="flex flex-col">
           <h1 className="text-3xl font-black text-white tracking-tighter drop-shadow-2xl leading-none">Soulyn</h1>
