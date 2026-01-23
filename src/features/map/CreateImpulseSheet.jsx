@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useLocation } from '../../context/LocationContext';
 import clsx from 'clsx';
 
+// PREMIUM SHEET PHYSICS (Идентично VenueSheet)
 const SHEET_TRANSITION = { duration: 0.4, ease: [0.25, 1, 0.5, 1] };
 
 export default function CreateImpulseSheet({ isOpen, initialData, onClose }) {
@@ -40,23 +41,23 @@ export default function CreateImpulseSheet({ isOpen, initialData, onClose }) {
     <AnimatePresence>
       {isOpen && (
         <>
+          {/* Backdrop */}
           <motion.div 
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 z-40 bg-black/80 backdrop-blur-sm"
+            className="absolute inset-0 z-40 bg-black/60 backdrop-blur-sm"
           />
           
-          {/* POP UP ANIMATION FROM BOTTOM */}
+          {/* SLIDE UP SHEET (Как в VenueSheet) */}
           <motion.div 
-            initial={{ y: 50, opacity: 0, scale: 0.95 }} 
-            animate={{ y: 0, opacity: 1, scale: 1 }} 
-            exit={{ y: 50, opacity: 0, scale: 0.95 }}
+            initial={{ y: "100%" }} 
+            animate={{ y: 0 }} 
+            exit={{ y: "100%" }}
             transition={SHEET_TRANSITION}
-            className="absolute bottom-28 left-4 right-4 z-50 bg-[#1C1C1E] rounded-[32px] border border-white/10 p-6 shadow-2xl overflow-hidden"
-            style={{ transformOrigin: 'bottom center' }}
+            className="absolute bottom-0 left-0 right-0 z-50 bg-[#121212] rounded-t-[32px] border-t border-white/10 p-6 pb-12 shadow-2xl"
           >
-             {/* Декоративная линия */}
-             <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary/0 via-primary/50 to-primary/0" />
+             {/* Drag Handle */}
+             <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-6" />
 
             <div className="flex justify-between items-start mb-6">
               <div>
@@ -75,8 +76,8 @@ export default function CreateImpulseSheet({ isOpen, initialData, onClose }) {
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder={targetVenue ? `Кого позовем в ${targetVenue.name}, ${user?.first_name}?` : `Что делаем, ${user?.first_name}?`}
-                className="w-full h-32 bg-black/20 border border-white/5 rounded-3xl p-5 text-white placeholder:text-white/20 resize-none focus:outline-none focus:border-white/10 text-lg font-medium transition-colors"
-                autoFocus
+                // Убрали autoFocus
+                className="w-full h-32 bg-white/5 border border-white/10 rounded-3xl p-5 text-white placeholder:text-white/20 resize-none focus:outline-none focus:border-white/20 text-lg font-medium transition-colors"
               />
               
               <motion.button 
@@ -85,7 +86,7 @@ export default function CreateImpulseSheet({ isOpen, initialData, onClose }) {
                 disabled={isSending}
                 className={clsx(
                   "w-full py-4 rounded-3xl flex items-center justify-center gap-2 font-bold text-lg transition-all",
-                  isSending ? "bg-white/10 text-white/50" : "bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.2)]"
+                  isSending ? "bg-white/10 text-white/50" : "bg-primary text-white shadow-[0_0_20px_rgba(139,92,246,0.3)]"
                 )}
               >
                 {isSending ? '...' : <>Опубликовать <Send size={20} /></>}
