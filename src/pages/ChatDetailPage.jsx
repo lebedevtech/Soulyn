@@ -1,157 +1,64 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, Send, Plus, MoreHorizontal, Phone } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import clsx from 'clsx';
-
-const MOCK_MESSAGES = [
-  { id: 1, text: 'Привет! Видел твой импульс в Surf Coffee ☕️', sender: 'them', time: '12:40' },
-  { id: 2, text: 'Привет! Да, планирую быть там через полчаса. Присоединишься?', sender: 'me', time: '12:42' },
-  { id: 3, text: 'С радостью! Возьму с собой ноут, поворкаем немного?', sender: 'them', time: '12:43' },
-  { id: 4, text: 'Отличная идея. Я как раз хотел обсудить тот проект.', sender: 'me', time: '12:45' },
-  { id: 5, text: 'Супер, тогда до встречи! Буду в черном худи.', sender: 'them', time: '12:46' },
-];
+import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Send, Phone, MoreVertical } from 'lucide-react';
 
 export default function ChatDetailPage() {
+  const { id } = useParams();
   const navigate = useNavigate();
-  const [messages, setMessages] = useState(MOCK_MESSAGES);
-  const [inputValue, setInputValue] = useState('');
-  const scrollRef = useRef(null);
-
-  // Автоскролл вниз при новых сообщениях
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
-
-  const handleSend = () => {
-    if (!inputValue.trim()) return;
-    const newMessage = {
-      id: Date.now(),
-      text: inputValue,
-      sender: 'me',
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-    setMessages([...messages, newMessage]);
-    setInputValue('');
-  };
 
   return (
-    <div className="absolute inset-0 w-full h-full bg-black overflow-hidden flex flex-col">
-      
-      {/* 1. HEADER (Фиксированный) */}
-      <div className="absolute top-0 left-0 right-0 z-50 pt-14 px-6 pb-6 bg-black/20 backdrop-blur-xl border-b border-white/5 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={() => navigate(-1)}
-            className="p-2 -ml-2 text-white/40 active:text-white transition-colors"
-          >
-            <ChevronLeft size={28} />
-          </button>
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <img 
-                src="https://i.pravatar.cc/150?u=5" 
-                className="w-10 h-10 rounded-full object-cover border border-white/10" 
-                alt="Maria"
-              />
-              <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-black" />
-            </div>
-            <div>
-              <h4 className="font-bold text-white text-[15px] leading-none">Мария</h4>
-              <p className="text-[10px] text-primary font-black uppercase tracking-widest mt-1">В сети</p>
-            </div>
+    <div className="relative w-full h-full bg-black flex flex-col">
+      {/* HEADER (pt-24 - Самое важное тут) */}
+      <div className="pt-24 pb-4 px-4 bg-black/80 backdrop-blur-xl border-b border-white/5 flex items-center justify-between z-30 shrink-0">
+        <button 
+          onClick={() => navigate(-1)} 
+          className="p-2.5 rounded-full bg-white/5 text-white active:bg-white/10 transition-colors"
+        >
+          <ArrowLeft size={22} />
+        </button>
+        
+        <div className="flex flex-col items-center">
+          <span className="font-bold text-white text-lg leading-none">Алексей</span>
+          <span className="text-[10px] text-green-500 font-bold uppercase tracking-widest mt-1">Online</span>
+        </div>
+
+        <button className="p-2.5 rounded-full bg-white/5 text-white active:bg-white/10 transition-colors">
+          <Phone size={22} />
+        </button>
+      </div>
+
+      {/* ОБЛАСТЬ СООБЩЕНИЙ */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* Пример сообщения собеседника */}
+        <div className="flex items-end gap-3 max-w-[80%]">
+          <img src="https://i.pravatar.cc/150?u=1" className="w-8 h-8 rounded-full mb-1" />
+          <div className="p-4 rounded-2xl rounded-bl-none bg-[#1c1c1e] text-white/90 leading-snug">
+            Привет! Ты уже подошел?
+            <span className="block text-[10px] text-white/30 mt-1 text-right">18:40</span>
           </div>
         </div>
-        <div className="flex gap-2">
-          <button className="p-3 text-white/40 active:text-white transition-colors">
-            <Phone size={20} />
-          </button>
-          <button className="p-3 text-white/40 active:text-white transition-colors">
-            <MoreHorizontal size={20} />
-          </button>
+
+        {/* Пример моего сообщения */}
+        <div className="flex items-end gap-3 max-w-[80%] ml-auto flex-row-reverse">
+          <div className="p-4 rounded-2xl rounded-br-none bg-primary text-white leading-snug">
+            Да, паркуюсь!
+            <span className="block text-[10px] text-white/40 mt-1 text-right">18:42</span>
+          </div>
         </div>
       </div>
 
-      {/* 2. AREA СООБЩЕНИЙ
-          pt-32 и pb-32 — для отступов от шапки и инпута
-      */}
-      <div 
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto no-scrollbar pt-32 pb-32 px-6 space-y-4"
-      >
-        <div className="flex justify-center my-8">
-          <span className="px-4 py-1.5 rounded-full bg-white/5 text-[10px] font-black text-white/20 uppercase tracking-[0.2em] border border-white/5">
-            Сегодня, 22 января
-          </span>
-        </div>
-
-        <AnimatePresence initial={false}>
-          {messages.map((msg) => (
-            <motion.div
-              key={msg.id}
-              initial={{ opacity: 0, scale: 0.9, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              className={clsx(
-                "flex w-full",
-                msg.sender === 'me' ? "justify-end" : "justify-start"
-              )}
-            >
-              <div className={clsx(
-                "max-w-[80%] p-4 rounded-[24px] relative group",
-                msg.sender === 'me' 
-                  ? "bg-primary/20 border border-primary/30 rounded-tr-none text-white shadow-[0_10px_20px_rgba(139,92,246,0.1)]" 
-                  : "glass-panel rounded-tl-none text-white/90"
-              )}>
-                <p className="text-[15px] leading-relaxed font-medium">
-                  {msg.text}
-                </p>
-                <span className={clsx(
-                  "text-[9px] font-black uppercase tracking-tighter mt-2 block opacity-30",
-                  msg.sender === 'me' ? "text-right" : "text-left"
-                )}>
-                  {msg.time}
-                </span>
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
-
-      {/* 3. INPUT (Фиксированный снизу) */}
-      <div className="absolute bottom-0 left-0 right-0 z-50 px-6 pb-10 pt-4 bg-gradient-to-t from-black via-black to-transparent">
-        <div className="glass-panel p-2 rounded-[32px] flex items-center gap-2">
-          <button className="p-3 text-white/20 hover:text-primary transition-colors active:scale-90">
-            <Plus size={24} />
-          </button>
-          
+      {/* ПОЛЕ ВВОДА (Нижнее меню тут скрыто, так что прижимаем к низу) */}
+      <div className="p-4 bg-black border-t border-white/10 shrink-0 mb-safe"> 
+        <div className="flex items-center gap-3 bg-[#1c1c1e] p-2 pr-2 rounded-[24px]">
           <input 
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
             type="text" 
             placeholder="Сообщение..." 
-            className="flex-1 bg-transparent border-none outline-none text-white text-[15px] font-medium px-2 py-3"
+            className="flex-1 bg-transparent text-white px-3 py-2 focus:outline-none placeholder:text-white/20"
           />
-
-          <button 
-            onClick={handleSend}
-            disabled={!inputValue.trim()}
-            className={clsx(
-              "p-3 rounded-full transition-all duration-300 active:scale-90",
-              inputValue.trim() 
-                ? "bg-primary text-white shadow-[0_0_15px_rgba(139,92,246,0.5)]" 
-                : "bg-white/5 text-white/10"
-            )}
-          >
-            <Send size={20} fill={inputValue.trim() ? "white" : "none"} />
+          <button className="p-3 bg-primary rounded-full text-white shadow-lg active:scale-90 transition-transform">
+            <Send size={18} fill="currentColor" />
           </button>
         </div>
       </div>
-
-      {/* Навигация (Градиентные барьеры для скролла сообщений) */}
-      <div className="absolute top-28 left-0 right-0 h-16 z-40 pointer-events-none bg-gradient-to-b from-black to-transparent" />
     </div>
   );
 }
