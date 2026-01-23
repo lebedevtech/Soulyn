@@ -78,10 +78,9 @@ export default function MapPage() {
   return (
     <div className="relative w-full h-full bg-black overflow-hidden">
       
-      {/* 1. ЛОГОТИП (ПО ЦЕНТРУ СВЕРХУ) */}
-      {/* top-2: чтобы встать в один ряд с кнопками Телеграма */}
-      {/* -translate-x-1/2: для идеального центрирования */}
-      <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center pointer-events-none">
+      {/* 1. ЛОГОТИП (БЕЗОПАСНАЯ ЗОНА: top-14) */}
+      {/* Увеличили отступ до 56px, чтобы гарантированно выйти из под челки */}
+      <div className="absolute top-14 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center pointer-events-none">
         <h1 className="text-xl font-black text-white tracking-tighter drop-shadow-2xl leading-none">Soulyn</h1>
         <div className="flex items-center gap-1.5 mt-1">
           <span className="w-1 h-1 bg-primary rounded-full animate-pulse shadow-[0_0_10px_rgba(139,92,246,1)]" />
@@ -90,7 +89,6 @@ export default function MapPage() {
       </div>
 
       {/* 2. ПЕРЕКЛЮЧАТЕЛЬ СЛОЕВ (СЛЕВА СНИЗУ) */}
-      {/* bottom-32: на одной высоте с правыми кнопками */}
       <div className="absolute bottom-32 left-4 z-30">
         <MapToggle mode={mapLayer} setMode={setMapLayer} />
       </div>
@@ -132,7 +130,7 @@ export default function MapPage() {
         </button>
       </div>
 
-      {/* 5. СПИСОК (Адаптирован под новый Header: pt-24 достаточно) */}
+      {/* 5. СПИСОК (Отступ pt-32, чтобы список начинался под логотипом) */}
       <AnimatePresence>
         {viewMode === 'list' && (
           <div className="absolute inset-0 z-10">
@@ -141,7 +139,7 @@ export default function MapPage() {
 
             <motion.div 
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="w-full h-full bg-black/60 backdrop-blur-2xl overflow-y-auto no-scrollbar pt-24 pb-48 px-6 relative z-10"
+              className="w-full h-full bg-black/60 backdrop-blur-2xl overflow-y-auto no-scrollbar pt-32 pb-48 px-6 relative z-10"
             >
               {mapLayer === 'places' ? (
                 <section>
