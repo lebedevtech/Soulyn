@@ -29,23 +29,25 @@ export default function ProfilePage() {
   return (
     <div className="relative w-full h-full bg-black flex flex-col overflow-hidden">
       
-      {/* 1. FIXED HEADER (Эталон: top-14, z-70) */}
-      <div className="fixed top-14 left-0 right-0 h-[52px] z-[70] flex items-center justify-center bg-black/80 backdrop-blur-md border-b border-white/5 text-center">
-        <span className="text-[17px] font-bold text-white tracking-tight -translate-y-3">Профиль</span>
+      {/* 1. FIXED HEADER: Теперь полностью прозрачный, без черной заливки */}
+      <div className="fixed top-14 left-0 right-0 h-[52px] z-[70] flex items-center justify-center text-center pointer-events-none">
+        <span className="text-[17px] font-bold text-white tracking-tight -translate-y-3 pointer-events-auto">
+          Профиль
+        </span>
       </div>
 
-      {/* 2. FIXED GRADIENTS (Верхний и Нижний) */}
-      {/* Top Gradient */}
-      <div className="fixed top-0 left-0 right-0 h-40 z-[65] bg-gradient-to-b from-black via-black/80 to-transparent pointer-events-none" />
+      {/* 2. GRADIENTS: Мягкие переходы сверху и снизу */}
+      {/* Top Gradient: создает плавное исчезновение текста при скролле под заголовок */}
+      <div className="fixed top-0 left-0 right-0 h-44 z-[65] bg-gradient-to-b from-black via-black/40 to-transparent pointer-events-none" />
       
-      {/* Bottom Gradient (z-45, чтобы быть под BottomNav(z-50), но над контентом) */}
-      <div className="fixed bottom-0 left-0 right-0 h-40 z-[45] bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none" />
+      {/* Bottom Gradient: зафиксирован строго внизу экрана, под BottomNav */}
+      <div className="fixed bottom-0 left-0 right-0 h-40 z-[45] bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none" />
 
       {/* 3. SCROLLABLE CONTENT */}
       <div className="flex-1 overflow-y-auto no-scrollbar pt-28 pb-44 px-6 relative z-10">
         
         {/* HUMAN PROFILE SECTION */}
-        <div className="flex items-center gap-5 mb-8 mt-2">
+        <div className="flex items-center gap-4 mb-8 mt-2">
           <div className="relative shrink-0">
             <div className="w-16 h-16 rounded-full border border-white/10 p-1 bg-white/5 shadow-2xl">
               <img 
@@ -65,7 +67,7 @@ export default function ProfilePage() {
             </h3>
             <button 
               onClick={() => { haptic?.impact('light'); setShowStatusPicker(!showStatusPicker); }}
-              className="mt-1 flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 active:bg-white/10 transition-all"
+              className="mt-1 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/10 active:bg-white/10 transition-all"
             >
               {currentStatus ? (
                 <>
@@ -106,7 +108,7 @@ export default function ProfilePage() {
 
         {/* ABSTRACT NFT ARTIFACT (Soulyn Passport) */}
         <div className="mb-4 px-1 flex justify-between items-end">
-           <h3 className="text-[9px] font-black text-white/20 uppercase tracking-[0.3em]">Identity Asset</h3>
+           <h3 className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em]">Identity Asset</h3>
            <Award size={12} className="text-primary/40" />
         </div>
         
