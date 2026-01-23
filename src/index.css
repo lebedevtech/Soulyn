@@ -5,31 +5,41 @@
   --color-primary: #8B5CF6;
 }
 
-/* --- КРИТИЧЕСКИЕ ИСПРАВЛЕНИЯ ДЛЯ TELEGRAM --- */
+/* --- ФИКС ЧЕРНОГО ЭКРАНА И СКРОЛЛА --- */
 html, body {
   margin: 0;
   padding: 0;
   width: 100%;
-  height: 100%; /* Фиксируем высоту */
-  background-color: #000000; /* Убираем белый цвет снизу! */
-  overflow: hidden; /* Запрещаем резиновый скролл iOS */
-  overscroll-behavior: none; /* Отключаем эффект оттягивания */
+  height: 100%;
+  background-color: #000000; /* Черная подложка */
+  overflow: hidden; /* Запрет прокрутки страницы */
+  -webkit-user-select: none; /* Защита от выделения текста */
+  user-select: none;
+  touch-action: pan-x pan-y; /* Разрешаем жесты только там, где надо */
 }
 
 #root {
   width: 100%;
   height: 100%;
+  isolation: isolate; /* Создает новый контекст наложения */
 }
-/* ------------------------------------------- */
 
+/* Исправление для Leaflet, чтобы карта не была серой */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  background: #000000;
+}
+
+.leaflet-control-attribution {
+  display: none !important;
+}
+
+/* Стандартные утилиты */
 :root {
   background-color: #050505;
   color: white;
   font-family: Inter, system-ui, sans-serif;
-}
-
-body {
-  @apply m-0 p-0 flex items-center justify-center min-h-screen overflow-hidden;
 }
 
 @layer utilities {
@@ -39,14 +49,10 @@ body {
     height: 852px;
     border: 12px solid #1c1c1e;
     border-radius: 55px;
+    margin: auto; /* Центрирование на десктопе */
   }
 
-  @media (max-width: 768px) {
-    .phone-frame {
-      @apply w-screen h-screen border-none rounded-none;
-    }
-  }
-
+  /* Стеклянные панели */
   .glass-panel {
     background: rgba(255, 255, 255, 0.03);
     backdrop-filter: blur(40px) saturate(160%);
@@ -60,9 +66,4 @@ body {
 
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-}
-
-/* Скрываем копирайт карты */
-.leaflet-control-attribution {
-  display: none !important;
 }

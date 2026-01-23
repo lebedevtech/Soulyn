@@ -16,44 +16,44 @@ export default function App() {
   
   const [isInTelegram, setIsInTelegram] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  
-  // Добавляем состояние высоты
-  const [appHeight, setAppHeight] = useState('100%');
 
   useEffect(() => {
+    // Проверка: мы в Телеграме?
     if (WebApp.initData) {
       setIsInTelegram(true);
       WebApp.ready();
-      WebApp.expand();
+      
+      // 1. ВКЛЮЧАЕМ ПОЛНОЭКРАННЫЙ РЕЖИМ (Премиум фича)
+      try {
+        WebApp.requestFullscreen(); 
+      } catch (e) {
+        console.log('Fullscreen not supported in this version');
+      }
+
+      // 2. Блокируем свайп закрытия (чтобы карта не закрывалась случайно)
+      try {
+        WebApp.disableVerticalSwipes(); 
+      } catch (e) {
+        console.log('Vertical swipes disable not supported');
+      }
+
+      // 3. Красим шапку
       WebApp.setHeaderColor('#000000');
       WebApp.setBackgroundColor('#000000');
-
-      // ФИКС ВЫСОТЫ ДЛЯ iOS
-      // Телеграм иногда не сразу дает правильную высоту, поэтому ставим таймер
-      const fixHeight = () => {
-        // viewportStableHeight - это самая надежная высота в ТГ
-        const h = WebApp.viewportStableHeight || window.innerHeight;
-        setAppHeight(`${h}px`);
-      };
-
-      fixHeight();
-      // Слушаем изменение размера (например, клавиатура выехала)
-      WebApp.onEvent('viewportChanged', fixHeight);
-
-      return () => {
-        WebApp.offEvent('viewportChanged', fixHeight);
-      };
+      WebApp.expand(); // На всякий случай для старых клиентов
     }
   }, []);
 
-  // Если мы в ТГ, применяем жесткую высоту. Если нет - iPhone фрейм.
-  const wrapperStyle = isInTelegram ? { height: appHeight } : {};
+  // КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ:
+  // Вместо JS-высоты используем 'fixed inset-0' для Телеграма.
+  // Это растягивает приложение на 100% без вариантов.
   const wrapperClass = isInTelegram 
-    ? "relative w-full bg-black overflow-hidden" // Убрали h-screen
-    : "phone-frame overflow-hidden";
+    ? "fixed inset-0 w-full h-full bg-black overflow-hidden" 
+    : "phone-frame overflow-hidden m-10"; // m-10 чтобы на компе не прилипало к краю
 
   return (
-    <div className={wrapperClass} style={wrapperStyle}>
+    <div className={wrapperClass}>
+      {/* Notch только для браузера */}
       {!isInTelegram && (
         <div className="hidden md:block absolute top-0 left-1/2 -translate-x-1/2 w-32 h-7 bg-black z-[3000] rounded-b-2xl" />
       )}
