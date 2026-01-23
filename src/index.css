@@ -5,6 +5,23 @@
   --color-primary: #8B5CF6;
 }
 
+/* --- КРИТИЧЕСКИЕ ИСПРАВЛЕНИЯ ДЛЯ TELEGRAM --- */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%; /* Фиксируем высоту */
+  background-color: #000000; /* Убираем белый цвет снизу! */
+  overflow: hidden; /* Запрещаем резиновый скролл iOS */
+  overscroll-behavior: none; /* Отключаем эффект оттягивания */
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+}
+/* ------------------------------------------- */
+
 :root {
   background-color: #050505;
   color: white;
@@ -36,7 +53,7 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-top: 1px solid rgba(255, 255, 255, 0.2);
   }
-
+  
   .glass-input {
     @apply bg-white/5 border border-white/10 backdrop-blur-md focus-within:border-primary/50 transition-all;
   }
@@ -45,8 +62,7 @@ body {
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 }
 
-/* Фикс для кастомных маркеров Leaflet */
-.custom-marker {
-  background: none;
-  border: none;
+/* Скрываем копирайт карты */
+.leaflet-control-attribution {
+  display: none !important;
 }

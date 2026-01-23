@@ -1,43 +1,59 @@
 import { useEffect, useState } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
-import WebApp from '@twa-dev/sdk'; // Импорт SDK
+import WebApp from '@twa-dev/sdk'; 
 import MapPage from './pages/MapPage';
 import ChatPage from './pages/ChatPage'; 
 import ChatDetailPage from './pages/ChatDetailPage'; 
 import NotificationsPage from './pages/NotificationsPage';
 import ProfilePage from './pages/ProfilePage';
 import BottomNav from './components/layout/BottomNav';
-import clsx from 'clsx';
+import CreateImpulseSheet from './features/map/CreateImpulseSheet';
 
 export default function App() {
   const location = useLocation();
   const isDetailChat = location.pathname.startsWith('/chat/');
   
-  // Состояние: мы в Телеграме или в браузере?
   const [isInTelegram, setIsInTelegram] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  
+  // Добавляем состояние высоты
+  const [appHeight, setAppHeight] = useState('100%');
 
   useEffect(() => {
-    // Проверяем наличие объекта Telegram WebApp
     if (WebApp.initData) {
       setIsInTelegram(true);
-      WebApp.ready(); // Сообщаем, что приложение загрузилось
-      WebApp.expand(); // Разворачиваем на полную высоту
-      
-      // Красим шапку Телеграма в черный, чтобы сливалась с нашим фоном
-      WebApp.setHeaderColor('#000000'); 
+      WebApp.ready();
+      WebApp.expand();
+      WebApp.setHeaderColor('#000000');
       WebApp.setBackgroundColor('#000000');
+
+      // ФИКС ВЫСОТЫ ДЛЯ iOS
+      // Телеграм иногда не сразу дает правильную высоту, поэтому ставим таймер
+      const fixHeight = () => {
+        // viewportStableHeight - это самая надежная высота в ТГ
+        const h = WebApp.viewportStableHeight || window.innerHeight;
+        setAppHeight(`${h}px`);
+      };
+
+      fixHeight();
+      // Слушаем изменение размера (например, клавиатура выехала)
+      WebApp.onEvent('viewportChanged', fixHeight);
+
+      return () => {
+        WebApp.offEvent('viewportChanged', fixHeight);
+      };
     }
   }, []);
 
-  // Классы обертки: если в ТГ - полный экран, если нет - iPhone-фрейм
+  // Если мы в ТГ, применяем жесткую высоту. Если нет - iPhone фрейм.
+  const wrapperStyle = isInTelegram ? { height: appHeight } : {};
   const wrapperClass = isInTelegram 
-    ? "relative w-full h-screen bg-black overflow-hidden" 
+    ? "relative w-full bg-black overflow-hidden" // Убрали h-screen
     : "phone-frame overflow-hidden";
 
   return (
-    <div className={wrapperClass}>
-      {/* Notch показываем только в браузере для красоты */}
+    <div className={wrapperClass} style={wrapperStyle}>
       {!isInTelegram && (
         <div className="hidden md:block absolute top-0 left-1/2 -translate-x-1/2 w-32 h-7 bg-black z-[3000] rounded-b-2xl" />
       )}
@@ -52,9 +68,16 @@ export default function App() {
             <Route path="/profile" element={<ProfilePage />} />
           </Routes>
         </AnimatePresence>
+
+        <CreateImpulseSheet 
+          isOpen={isCreateOpen} 
+          onClose={() => setIsCreateOpen(false)} 
+        />
       </div>
       
-      {!isDetailChat && <BottomNav />}
+      {!isDetailChat && (
+        <BottomNav onCreateClick={() => setIsCreateOpen(true)} />
+      )}
     </div>
   );
 }
