@@ -4,11 +4,11 @@ import App from './App.jsx';
 import './index.css';
 import { AuthProvider } from './context/AuthContext';
 import { LocationProvider } from './context/LocationContext';
-import { TelegramProvider } from './context/TelegramContext'; // Импорт
+import { TelegramProvider } from './context/TelegramContext'; // Проверь путь!
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <TelegramProvider> {/* Оборачиваем самым первым */}
+    <TelegramProvider> {/* Самый верхний уровень */}
       <AuthProvider>
         <LocationProvider>
           <App />

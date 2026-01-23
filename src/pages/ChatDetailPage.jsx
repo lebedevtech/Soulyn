@@ -7,7 +7,6 @@ import { useAuth } from '../context/AuthContext';
 import { useTelegram } from '../context/TelegramContext';
 import clsx from 'clsx';
 
-// PREMIUM MESSAGE ANIMATION
 const messageVariants = {
   hidden: { y: 20, opacity: 0, scale: 0.95, filter: 'blur(5px)' },
   visible: { 
@@ -20,21 +19,19 @@ const messageVariants = {
 };
 
 export default function ChatDetailPage() {
-  const { id } = useParams(); // match_id
+  const { id } = useParams();
   const { user } = useAuth();
-  const { haptic } = useTelegram();
+  const { haptic } = useTelegram(); // Теперь это безопасно
   const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [partner, setPartner] = useState(null);
   const bottomRef = useRef(null);
 
-  // 1. Загрузка собеседника и сообщений
   useEffect(() => {
     if (!user || !id) return;
 
     const fetchChatData = async () => {
-      // Получаем инфо о матче (чтобы найти собеседника)
       const { data: match } = await supabase
         .from('matches')
         .select(`initiator:initiator_id(id, first_name, avatar_url), requester:requester_id(id, first_name, avatar_url)`)
@@ -46,7 +43,6 @@ export default function ChatDetailPage() {
         setPartner(partnerData);
       }
 
-      // Получаем историю сообщений
       const { data: msgs } = await supabase
         .from('messages')
         .select('*')
@@ -58,18 +54,17 @@ export default function ChatDetailPage() {
 
     fetchChatData();
 
-    // 2. Подписка на новые сообщения (Realtime)
     const channel = supabase.channel(`chat:${id}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `match_id=eq.${id}` }, (payload) => {
         setMessages((prev) => [...prev, payload.new]);
-        haptic.selection(); // Легкая вибрация при входящем
+        // Безопасный вызов
+        haptic?.selection && haptic.selection(); 
       })
       .subscribe();
 
     return () => supabase.removeChannel(channel);
   }, [id, user]);
 
-  // Авто-скролл вниз
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -77,12 +72,10 @@ export default function ChatDetailPage() {
   const handleSend = async () => {
     if (!newMessage.trim()) return;
     
-    haptic.impact('light'); // Вибрация при отправке
+    haptic?.impact && haptic.impact('light');
+    
     const text = newMessage;
-    setNewMessage(''); // Сразу очищаем для UX
-
-    // Оптимистичное добавление (пока летит запрос)
-    // setMessages(prev => [...prev, { id: Date.now(), text, sender_id: user.id, created_at: new Date().toISOString() }]);
+    setNewMessage(''); 
 
     const { error } = await supabase.from('messages').insert([{
       match_id: id,
@@ -95,25 +88,20 @@ export default function ChatDetailPage() {
 
   return (
     <div className="w-full h-full bg-black flex flex-col">
-      {/* Header */}
       <div className="pt-14 pb-4 px-4 flex items-center justify-between bg-black/80 backdrop-blur-md border-b border-white/5 z-20">
         <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-white active:opacity-50 transition-opacity"><ArrowLeft size={24} /></button>
-        
         <div className="flex flex-col items-center">
           <span className="font-bold text-white text-[17px]">{partner?.first_name || '...'}</span>
           <span className="text-[11px] text-green-500 font-medium">Online</span>
         </div>
-        
         <div className="flex gap-4">
            <Phone size={20} className="text-white/50" />
            <MoreVertical size={20} className="text-white/50" />
         </div>
       </div>
 
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 && <p className="text-center text-white/30 text-sm mt-10">Начните общение...</p>}
-        
         {messages.map((msg) => {
           const isMe = msg.sender_id === user?.id;
           return (
@@ -139,7 +127,6 @@ export default function ChatDetailPage() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
       <div className="p-4 bg-black border-t border-white/10 pb-8">
         <div className="flex gap-2 items-center bg-[#1C1C1E] rounded-full p-2 pl-4">
           <input 
