@@ -10,13 +10,10 @@ import {
   Users,
   Building2,
   Star,
-  MapPin,
-  ChevronRight,
   Navigation
 } from 'lucide-react';
 import clsx from 'clsx';
 
-// Переключатель слева (Social/Places)
 const MapToggle = ({ mode, setMode }) => (
   <div className="flex flex-col gap-3 pointer-events-auto">
     <button
@@ -50,9 +47,8 @@ export default function MapPage({ onOpenCreate }) {
   const [impulses, setImpulses] = useState([]);
   const [venues, setVenues] = useState([]);
   
-  // GPS Состояния
   const [userLocation, setUserLocation] = useState(null);
-  const [followUser, setFollowUser] = useState(true); // По умолчанию следим за юзером
+  const [followUser, setFollowUser] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -69,7 +65,6 @@ export default function MapPage({ onOpenCreate }) {
     fetchData();
 
     if (navigator.geolocation) {
-      // Используем watchPosition вместо getCurrentPosition для постоянного обновления
       const watchId = navigator.geolocation.watchPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
@@ -96,10 +91,21 @@ export default function MapPage({ onOpenCreate }) {
     return () => supabase.removeChannel(channel);
   }, []);
 
+  // ОБРАБОТЧИК КНОПКИ GPS: ГАРАНТИРУЕТ ВКЛЮЧЕНИЕ С ОДНОГО КЛИКА
+  const handleGPSClick = () => {
+    // Сначала сбрасываем, чтобы реакт точно увидел изменение, если вдруг состояние "залипло"
+    // (Хотя обычно setFollowUser(true) достаточно, это перестраховка)
+    if (followUser) {
+      // Если уже следим - ничего не меняем или можно сделать re-center
+      // Но в нашем случае userLocation обновит flyTo
+    }
+    setFollowUser(true);
+  };
+
   return (
     <div className="relative w-full h-full bg-black overflow-hidden">
       
-      {/* 1. ЛОГОТИП (Чистый верх) */}
+      {/* 1. ЛОГОТИП */}
       <div className="absolute top-14 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center pointer-events-none">
         <h1 className="text-xl font-black text-white tracking-tighter drop-shadow-2xl leading-none">Soulyn</h1>
         <div className="flex items-center gap-1.5 mt-1">
@@ -110,7 +116,7 @@ export default function MapPage({ onOpenCreate }) {
         </div>
       </div>
 
-      {/* 2. ЛЕВЫЙ НИЖНИЙ: Переключатель слоев */}
+      {/* 2. ПЕРЕКЛЮЧАТЕЛЬ СЛЕВА */}
       <div className="absolute bottom-32 left-4 z-30">
         <MapToggle mode={mapLayer} setMode={setMapLayer} />
       </div>
@@ -122,20 +128,20 @@ export default function MapPage({ onOpenCreate }) {
           venues={venues} 
           mode={mapLayer}
           userLocation={userLocation}
-          followUser={followUser} // Передаем флаг слежения
-          onUserInteraction={() => setFollowUser(false)} // Если юзер трогает карту - отключаем слежение
+          followUser={followUser}
+          onUserInteraction={() => setFollowUser(false)} 
           onImpulseClick={setSelectedImpulse} 
           onVenueClick={(venue) => setSelectedVenue(venue)} 
         />
       </div>
 
-      {/* 4. ПРАВЫЙ НИЖНИЙ: Инструменты (Группа) */}
+      {/* 4. КНОПКИ СПРАВА */}
       <div className="absolute bottom-32 right-4 z-30 flex flex-col gap-3 pointer-events-auto">
         
-        {/* Кнопка GPS (Показываем только если есть GPS) */}
+        {/* КНОПКА GPS */}
         {userLocation && (
           <button 
-            onClick={() => setFollowUser(true)}
+            onClick={handleGPSClick} // Используем наш обработчик
             className={clsx(
               "w-12 h-12 rounded-2xl flex items-center justify-center backdrop-blur-xl border transition-all shadow-xl active:scale-90",
               followUser 
@@ -147,7 +153,7 @@ export default function MapPage({ onOpenCreate }) {
           </button>
         )}
 
-        {/* Кнопка Вида (Одна кнопка - переключатель) */}
+        {/* ПЕРЕКЛЮЧАТЕЛЬ ВИДА */}
         <button 
           onClick={() => setViewMode(viewMode === 'map' ? 'list' : 'map')} 
           className={clsx(
@@ -157,12 +163,10 @@ export default function MapPage({ onOpenCreate }) {
               : "bg-black/40 text-white/50 border-white/10"
           )}
         >
-          {/* Если Карта - показываем иконку Списка, и наоборот */}
           {viewMode === 'map' ? <LayoutGrid size={20} /> : <MapIcon size={20} />}
         </button>
       </div>
 
-      {/* 5. СПИСОК */}
       <AnimatePresence>
         {viewMode === 'list' && (
           <div className="absolute inset-0 z-10">

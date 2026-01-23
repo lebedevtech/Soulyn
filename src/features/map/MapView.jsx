@@ -4,29 +4,27 @@ import 'leaflet/dist/leaflet.css';
 import { useEffect } from 'react';
 import clsx from 'clsx';
 
-// 1. КОМПОНЕНТ ДЛЯ ОТЛОВА ВЗАИМОДЕЙСТВИЙ
-// Слушает и зум, и драг, чтобы вовремя отключить "слежение"
+// 1. ОТЛОВ ВЗАИМОДЕЙСТВИЙ
 function UserInteractionHandler({ onInteraction }) {
   useMapEvents({
-    dragstart: () => onInteraction && onInteraction(), // Начал тянуть
-    zoomstart: () => onInteraction && onInteraction(), // Начал зумить
+    dragstart: () => onInteraction && onInteraction(),
+    zoomstart: () => onInteraction && onInteraction(),
   });
   return null;
 }
 
-// 2. УМНЫЙ КОНТРОЛЛЕР КАМЕРЫ (INSTANT VERSION)
-function MapController({ center, userLocation, followUser }) {
+// 2. УМНЫЙ КОНТРОЛЛЕР (SMOOTH VERSION)
+function MapController({ userLocation, followUser }) {
   const map = useMap();
 
   useEffect(() => {
-    // Работаем только если включено слежение и есть координаты
     if (followUser && userLocation) {
-      // Используем setView для мгновенной реакции вместо медленного flyTo
-      map.setView(userLocation, 15, {
+      // ИСПОЛЬЗУЕМ flyTo ДЛЯ ПЛАВНОСТИ
+      map.flyTo(userLocation, 15, {
         animate: true,
-        duration: 0.5, // Очень быстро (полсекунды)
-        easeLinearity: 1, // Линейно, без "разгона"
-        noMoveStart: true
+        duration: 0.8, // Чуть меньше секунды (быстро, но плавно)
+        easeLinearity: 0.25, // Делает траекторию более "изогнутой" и мягкой
+        noMoveStart: true // Важно: предотвращает конфликт событий
       });
     }
   }, [userLocation, followUser, map]);
@@ -42,11 +40,10 @@ export default function MapView({
   followUser, 
   onImpulseClick, 
   onVenueClick,
-  onUserInteraction // Функция отключения слежения, приходящая сверху
+  onUserInteraction 
 }) {
   const defaultCenter = [55.7558, 37.6173];
 
-  // Иконка "Я"
   const myLocationIcon = L.divIcon({
     className: 'my-location-marker',
     html: `
@@ -106,14 +103,11 @@ export default function MapView({
       className="w-full h-full z-0 bg-[#050505]"
       zoomControl={false}
     >
-      {/* Контроллер перемещения (по кнопке) */}
       <MapController 
-        center={defaultCenter} 
         userLocation={userLocation} 
         followUser={followUser}
       />
       
-      {/* Обработчик действий юзера (драг/зум) */}
       <UserInteractionHandler onInteraction={onUserInteraction} />
 
       <TileLayer
