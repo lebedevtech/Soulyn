@@ -6,7 +6,6 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import clsx from 'clsx';
 
-// PREMIUM BLUR ANIMATION (Синхронизировано с MapPage)
 const listContainerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -63,16 +62,19 @@ export default function ChatPage() {
   }
 
   return (
-    // FIX: pt-20 = 80px (идеально для заголовка, как в Уведомлениях)
-    <div className="w-full h-full bg-black flex flex-col pt-20 px-6">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-black text-white tracking-tight">Чаты</h1>
-        <div className="p-3 bg-white/5 rounded-full border border-white/5">
-          <Search size={20} className="text-white/50" />
-        </div>
+    <div className="relative w-full h-full bg-black flex flex-col">
+      {/* === HEADER (CENTERED) === */}
+      <div className="absolute top-0 left-0 right-0 h-[52px] z-20 flex items-center justify-center bg-black/80 backdrop-blur-md border-b border-white/5">
+        <span className="text-[17px] font-bold text-white tracking-tight">Чаты</span>
+        
+        {/* Кнопка поиска справа (опционально) */}
+        <button className="absolute right-4 p-2 text-white/50 hover:text-white transition-colors">
+          <Search size={20} />
+        </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto no-scrollbar pb-32">
+      {/* Контент с отступом под Header (pt-[60px]) */}
+      <div className="flex-1 overflow-y-auto no-scrollbar pt-[60px] pb-32 px-4">
         {chats.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-center">
             <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-4 text-white/20">
@@ -97,20 +99,20 @@ export default function ChatPage() {
                   key={chat.id}
                   variants={itemVariants}
                   onClick={() => navigate(`/chat/${chat.id}`)}
-                  className="w-full p-4 rounded-[24px] bg-white/5 border border-white/5 flex items-center gap-4 active:scale-[0.98] transition-all"
+                  className="w-full p-3 rounded-[20px] bg-white/5 border border-white/5 flex items-center gap-3 active:scale-[0.98] transition-all"
                 >
                   <div className="relative">
-                    <img src={partner.avatar_url || 'https://i.pravatar.cc/150'} className="w-14 h-14 rounded-full object-cover border border-white/10" alt=""/>
-                    <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-black rounded-full" />
+                    <img src={partner.avatar_url || 'https://i.pravatar.cc/150'} className="w-12 h-12 rounded-full object-cover border border-white/10" alt=""/>
+                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-black rounded-full" />
                   </div>
                   <div className="flex-1 text-left min-w-0">
-                    <div className="flex justify-between items-center mb-1">
-                      <h3 className="font-bold text-white text-lg">{partner.first_name}</h3>
+                    <div className="flex justify-between items-center mb-0.5">
+                      <h3 className="font-bold text-white text-[16px]">{partner.first_name}</h3>
                       <span className="text-[10px] text-white/30 font-bold uppercase">12:30</span>
                     </div>
-                    <p className="text-white/50 text-sm truncate pr-4">{chat.impulse?.message || 'Новый чат'}</p>
+                    <p className="text-white/50 text-[13px] truncate pr-4">{chat.impulse?.message || 'Новый чат'}</p>
                   </div>
-                  <ChevronRight size={20} className="text-white/20" />
+                  <ChevronRight size={18} className="text-white/20" />
                 </motion.button>
               );
             })}

@@ -1,45 +1,91 @@
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Bell, Heart, UserPlus, Star } from 'lucide-react';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 import clsx from 'clsx';
 
-const NOTIFICATIONS = [
-  { id: 1, type: 'match', title: 'Новый мэтч!', text: 'Анна хочет присоединиться к вам', time: '2м', icon: Heart, color: 'bg-pink-500' },
-  { id: 2, type: 'invite', title: 'Приглашение', text: 'Вас пригласили в закрытый клуб', time: '1ч', icon: Star, color: 'bg-yellow-500' },
-  { id: 3, type: 'follow', title: 'Новый подписчик', text: 'Максим подписался на обновления', time: '3ч', icon: UserPlus, color: 'bg-blue-500' },
-];
+const listContainerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.05, delayChildren: 0.1 }
+  }
+};
+
+const itemVariants = {
+  hidden: { y: 10, opacity: 0, filter: 'blur(5px)', scale: 0.98 },
+  visible: { 
+    y: 0, 
+    opacity: 1, 
+    filter: 'blur(0px)',
+    scale: 1,
+    transition: { duration: 0.5, ease: [0.25, 0.4, 0.25, 1] } 
+  }
+};
 
 export default function NotificationsPage() {
+  const { user } = useAuth();
+  const [notifications, setNotifications] = useState([]);
+
+  useEffect(() => {
+    // Mock data for demo
+    setNotifications([
+      { id: 1, type: 'match', text: 'У вас новый мэтч с Анной!', time: '2м назад', read: false },
+      { id: 2, type: 'like', text: 'Ваш импульс понравился 3 людям', time: '15м назад', read: true },
+      { id: 3, type: 'system', text: 'Добро пожаловать в Soulyn Premium', time: '1ч назад', read: true },
+    ]);
+  }, []);
+
+  const getIcon = (type) => {
+    switch (type) {
+      case 'match': return <Heart size={18} className="text-red-500 fill-red-500" />;
+      case 'like': return <Star size={18} className="text-yellow-500 fill-yellow-500" />;
+      default: return <Bell size={18} className="text-white" />;
+    }
+  };
+
   return (
-    <div className="relative w-full h-full bg-black">
-      {/* HEADER (pt-24) */}
-      <div className="absolute top-0 left-0 right-0 z-30 pt-24 px-6 pb-6 bg-gradient-to-b from-black via-black/90 to-transparent">
-        <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
-          Уведомления <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-        </h1>
+    <div className="relative w-full h-full bg-black flex flex-col">
+      {/* === HEADER (CENTERED) === */}
+      <div className="absolute top-0 left-0 right-0 h-[52px] z-20 flex items-center justify-center bg-black/80 backdrop-blur-md border-b border-white/5">
+        <span className="text-[17px] font-bold text-white tracking-tight">Уведомления</span>
       </div>
 
-      {/* СПИСОК (pt-44) */}
-      <div className="w-full h-full overflow-y-auto no-scrollbar pt-44 pb-32 px-4 space-y-3">
-        {NOTIFICATIONS.map((item, i) => (
-          <motion.div
-            key={item.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
-            className="p-4 rounded-[24px] bg-white/5 border border-white/5 flex items-start gap-4"
-          >
-            <div className={clsx("w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-white shadow-lg", item.color)}>
-              <item.icon size={18} fill="currentColor" />
-            </div>
-            <div className="flex-1">
-              <div className="flex justify-between items-start">
-                <h3 className="font-bold text-white text-base">{item.title}</h3>
-                <span className="text-[10px] text-white/30 font-black uppercase mt-1">{item.time}</span>
+      <div className="flex-1 overflow-y-auto no-scrollbar pt-[60px] pb-32 px-4">
+        <motion.div 
+          className="space-y-2 transform-gpu"
+          variants={listContainerVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          {notifications.map((notif) => (
+            <motion.div
+              key={notif.id}
+              variants={itemVariants}
+              className={clsx(
+                "w-full p-4 rounded-[20px] border flex gap-4 items-center active:scale-[0.98] transition-all",
+                notif.read ? "bg-white/5 border-white/5" : "bg-white/10 border-white/10"
+              )}
+            >
+              <div className={clsx(
+                "w-10 h-10 rounded-full flex items-center justify-center shrink-0",
+                notif.read ? "bg-white/5" : "bg-primary/20"
+              )}>
+                {getIcon(notif.type)}
               </div>
-              <p className="text-white/60 text-sm mt-1 leading-snug">{item.text}</p>
-            </div>
-          </motion.div>
-        ))}
+              
+              <div className="flex-1">
+                <p className={clsx("text-sm leading-tight", notif.read ? "text-white/60" : "text-white font-bold")}>
+                  {notif.text}
+                </p>
+                <p className="text-[10px] text-white/30 font-bold uppercase mt-1.5">{notif.time}</p>
+              </div>
+
+              {!notif.read && <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_10px_rgba(139,92,246,0.5)]" />}
+            </motion.div>
+          ))}
+        </motion.div>
       </div>
     </div>
   );
