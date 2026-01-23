@@ -64,6 +64,7 @@
 /* LEAFLET CUSTOMIZATION (FIXES) */
 .leaflet-container {
   background-color: #000000 !important;
+  /* Карта сама управляет жестами, здесь ничего не трогаем */
 }
 .leaflet-control-attribution {
   display: none !important;
@@ -77,8 +78,12 @@ body, html, #root {
   padding: 0;
   background-color: #000;
   color: white;
-  -webkit-tap-highlight-color: transparent;
+  -webkit-tap-highlight-color: transparent; /* Убирает синюю вспышку при нажатии на Android */
   font-family: var(--font-sans);
+  
+  /* FIX: Запрет жестов зума на уровне CSS */
+  touch-action: pan-x pan-y; 
+  overscroll-behavior: none; /* Убирает "резиновый" эффект прокрутки страницы */
 }
 
 @supports (height: 100dvh) {

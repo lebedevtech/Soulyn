@@ -15,11 +15,10 @@ const listContainerVariants = {
 };
 
 const itemVariants = {
-  hidden: { y: 15, opacity: 0, filter: 'blur(8px)', scale: 0.96 },
+  hidden: { y: 15, opacity: 0, scale: 1 },
   visible: { 
     y: 0, 
     opacity: 1, 
-    filter: 'blur(0px)',
     scale: 1,
     transition: { duration: 0.4, ease: TRANSITION_EASE } 
   }
@@ -47,18 +46,18 @@ export default function NotificationsPage() {
 
   return (
     <div className="relative w-full h-full bg-black flex flex-col">
-      {/* HEADER */}
-      <div className="absolute top-12 left-0 right-0 h-[52px] z-20 flex items-center justify-center bg-black/80 backdrop-blur-md border-b border-white/5">
+      {/* HEADER (Z-60 & Blurred) */}
+      <div className="absolute top-14 left-0 right-0 h-[52px] z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md border-b border-white/5">
         <span className="text-[17px] font-bold text-white tracking-tight">Уведомления</span>
       </div>
 
-      {/* ГРАДИЕНТЫ ДЛЯ СПИСКА (Исправлено: уход в затемнение) */}
-      <div className="absolute top-[100px] left-0 right-0 h-12 z-10 bg-gradient-to-b from-black to-transparent pointer-events-none" />
+      {/* УБРАЛИ ВЕРХНИЙ ГРАДИЕНТ. Оставили только нижний. */}
       <div className="absolute bottom-0 left-0 right-0 h-32 z-10 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none" />
 
-      <div className="flex-1 overflow-y-auto no-scrollbar pt-28 pb-32 px-4 relative z-0">
+      {/* Контент: pt-32 (под хедер) */}
+      <div className="flex-1 overflow-y-auto no-scrollbar pt-32 pb-32 px-4 relative z-0">
         <motion.div 
-          className="space-y-2 will-change-transform"
+          className="space-y-2"
           variants={listContainerVariants}
           initial="hidden"
           animate="visible"
