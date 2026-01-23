@@ -17,14 +17,15 @@ import {
 } from 'lucide-react';
 import clsx from 'clsx';
 
-// Компонент переключателя режимов карты
+// ПЕРЕКЛЮЧАТЕЛЬ РЕЖИМОВ (Social / Places)
+// top-24 - расположили чуть ниже заголовка, но выше карты
 const MapToggle = ({ mode, setMode }) => (
-  <div className="absolute top-28 left-1/2 -translate-x-1/2 z-30 p-1 bg-white/10 backdrop-blur-xl rounded-full border border-white/10 flex shadow-2xl">
+  <div className="absolute top-24 left-1/2 -translate-x-1/2 z-30 p-1 bg-black/60 backdrop-blur-xl rounded-full border border-white/10 flex shadow-2xl">
     <button
       onClick={() => setMode('social')}
       className={clsx(
-        "px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2",
-        mode === 'social' ? "bg-white text-black shadow-lg scale-105" : "text-white/50 hover:text-white"
+        "px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
+        mode === 'social' ? "bg-white text-black shadow-lg" : "text-white/50 hover:text-white"
       )}
     >
       <Users size={12} /> Social
@@ -32,8 +33,8 @@ const MapToggle = ({ mode, setMode }) => (
     <button
       onClick={() => setMode('places')}
       className={clsx(
-        "px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2",
-        mode === 'places' ? "bg-white text-black shadow-lg scale-105" : "text-white/50 hover:text-white"
+        "px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
+        mode === 'places' ? "bg-white text-black shadow-lg" : "text-white/50 hover:text-white"
       )}
     >
       <Building2 size={12} /> Places
@@ -43,14 +44,13 @@ const MapToggle = ({ mode, setMode }) => (
 
 export default function MapPage() {
   const [viewMode, setViewMode] = useState('map'); // 'map' | 'list'
-  const [mapLayer, setMapLayer] = useState('social'); // 'social' | 'places' (НОВОЕ)
+  const [mapLayer, setMapLayer] = useState('social'); // 'social' | 'places'
   
   const [selectedImpulse, setSelectedImpulse] = useState(null);
   const [impulses, setImpulses] = useState([]);
-  const [venues, setVenues] = useState([]); // Состояние для заведений
+  const [venues, setVenues] = useState([]);
 
   useEffect(() => {
-    // 1. Загрузка импульсов
     const fetchImpulses = async () => {
       const { data } = await supabase
         .from('impulses')
@@ -59,18 +59,14 @@ export default function MapPage() {
       if (data) setImpulses(data);
     };
 
-    // 2. Загрузка заведений (Places)
     const fetchVenues = async () => {
-      const { data } = await supabase
-        .from('venues')
-        .select('*');
+      const { data } = await supabase.from('venues').select('*');
       if (data) setVenues(data);
     };
 
     fetchImpulses();
     fetchVenues();
 
-    // Realtime подписка на импульсы
     const channel = supabase
       .channel('public:impulses')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'impulses' }, async (payload) => {
@@ -88,21 +84,49 @@ export default function MapPage() {
 
   return (
     <div className="relative w-full h-full bg-black overflow-hidden">
-      {/* ПЕРЕКЛЮЧАТЕЛЬ РЕЖИМОВ (Social / Places) */}
+      
+      {/* 1. ПЕРЕКЛЮЧАТЕЛЬ СЛОЕВ (Центр сверху) */}
       <MapToggle mode={mapLayer} setMode={setMapLayer} />
 
-      {/* КАРТА */}
+      {/* 2. КАРТА */}
       <div className="absolute inset-0 z-0">
         <MapView 
           impulses={impulses} 
-          venues={venues} // Передаем заведения
-          mode={mapLayer} // Передаем активный режим
+          venues={venues} 
+          mode={mapLayer} 
           onImpulseClick={setSelectedImpulse} 
-          onVenueClick={(venue) => alert(`Выбрано место: ${venue.name}`)} // Пока просто алерт
+          onVenueClick={(venue) => alert(`Выбрано место: ${venue.name}`)} 
         />
       </div>
 
-      {/* РЕЖИМ ОБЗОРА (List View) */}
+      {/* 3. КНОПКИ УПРАВЛЕНИЯ ВИДОМ (Плавающие справа снизу) */}
+      {/* Мы вынесли их из Header, чтобы разгрузить верх */}
+      <div className="absolute bottom-32 right-4 z-30 flex flex-col gap-3 pointer-events-auto">
+        <button 
+          onClick={() => setViewMode('map')} 
+          className={clsx(
+            "w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-xl border transition-all shadow-xl active:scale-90",
+            viewMode === 'map' 
+              ? "bg-white text-black border-white" 
+              : "bg-black/60 text-white/50 border-white/10"
+          )}
+        >
+          <MapIcon size={20} />
+        </button>
+        <button 
+          onClick={() => setViewMode('list')} 
+          className={clsx(
+            "w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-xl border transition-all shadow-xl active:scale-90",
+            viewMode === 'list' 
+              ? "bg-white text-black border-white" 
+              : "bg-black/60 text-white/50 border-white/10"
+          )}
+        >
+          <LayoutGrid size={20} />
+        </button>
+      </div>
+
+      {/* 4. РЕЖИМ СПИСКА (List View) */}
       <AnimatePresence>
         {viewMode === 'list' && (
           <div className="absolute inset-0 z-10">
@@ -113,7 +137,6 @@ export default function MapPage() {
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="w-full h-full bg-black/60 backdrop-blur-2xl overflow-y-auto no-scrollbar pt-44 pb-48 px-6 relative z-10"
             >
-              {/* Если режим PLACES - показываем список мест */}
               {mapLayer === 'places' ? (
                 <section>
                    <h3 className="text-[10px] font-black text-white/50 uppercase tracking-[0.3em] mb-6 ml-1">Лучшие места</h3>
@@ -131,7 +154,6 @@ export default function MapPage() {
                    </div>
                 </section>
               ) : (
-                /* Если режим SOCIAL - показываем импульсы */
                 <section>
                   <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mb-6 ml-1">Актуально сейчас</h3>
                   <div className="space-y-3">
@@ -168,8 +190,8 @@ export default function MapPage() {
         )}
       </AnimatePresence>
 
-      {/* HEADER */}
-      <div className="absolute top-0 left-0 right-0 z-30 pt-24 px-6 flex items-center justify-between pointer-events-none">
+      {/* HEADER - Теперь здесь ТОЛЬКО логотип и город */}
+      <div className="absolute top-0 left-0 right-0 z-30 pt-16 px-6 flex items-center justify-between pointer-events-none">
         <div className="flex flex-col">
           <h1 className="text-3xl font-black text-white tracking-tighter drop-shadow-2xl leading-none">Soulyn</h1>
           <div className="flex items-center gap-1.5 mt-2">
@@ -177,14 +199,7 @@ export default function MapPage() {
             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/50">Москва</span>
           </div>
         </div>
-        <div className="glass-panel p-1 rounded-full flex gap-1 pointer-events-auto shadow-2xl">
-          <button onClick={() => setViewMode('map')} className={clsx("p-2.5 rounded-full transition-all", viewMode === 'map' ? "bg-white text-black shadow-lg" : "text-white/40")}>
-            <MapIcon size={20} />
-          </button>
-          <button onClick={() => setViewMode('list')} className={clsx("p-2.5 rounded-full transition-all", viewMode === 'list' ? "bg-white text-black shadow-lg" : "text-white/40")}>
-            <LayoutGrid size={20} />
-          </button>
-        </div>
+        {/* Правая часть Header теперь пустая, чтобы не мешать кнопкам Телеграма */}
       </div>
 
       <ImpulseSheet impulse={selectedImpulse} onClose={() => setSelectedImpulse(null)} />
