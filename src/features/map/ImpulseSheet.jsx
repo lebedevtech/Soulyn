@@ -46,25 +46,32 @@ export default function ImpulseSheet({ impulse, onClose }) {
     setLoading(false);
   };
 
-  // if (!impulse) return null; — убрали, родитель контролирует
-
   const author = impulse.users || {};
   const isOwner = user?.id === impulse.user_id;
 
   return (
     <>
+      {/* FIXED BACKDROP: 
+        Изменено с absolute на fixed и z-index поднят до 80, 
+        чтобы гарантированно перекрыть BottomNav.
+      */}
       <motion.div 
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        initial={{ opacity: 0 }} 
+        animate={{ opacity: 1 }} 
+        exit={{ opacity: 0 }}
         onClick={onClose}
-        className="absolute inset-0 z-40 bg-black/60 backdrop-blur-sm"
+        className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm"
       />
       
+      {/* FIXED SHEET: 
+        Изменено с absolute на fixed и z-index поднят до 90.
+      */}
       <motion.div 
         initial={{ y: "100%" }} 
         animate={{ y: 0 }} 
         exit={{ y: "100%" }}
         transition={SHEET_TRANSITION}
-        className="absolute bottom-0 left-0 right-0 z-50 bg-[#121212] rounded-t-[32px] border-t border-white/10 overflow-hidden shadow-2xl"
+        className="fixed bottom-0 left-0 right-0 z-[90] bg-[#121212] rounded-t-[32px] border-t border-white/10 overflow-hidden shadow-2xl"
       >
         {showDeleteConfirm ? (
            <div className="p-8 pb-12 flex flex-col items-center text-center animate-in fade-in zoom-in duration-200">
