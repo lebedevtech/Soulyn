@@ -2,26 +2,33 @@ import { User, Settings, Star, MapPin, Edit3, Terminal } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion'; // Добавил Motion
+import { motion } from 'framer-motion';
 import clsx from 'clsx';
 
-// PREMIUM ANIMATIONS
+// PREMIUM ANIMATION CONSTANTS (Единая физика)
+const TRANSITION_EASE = [0.25, 0.1, 0.25, 1];
+
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.05, delayChildren: 0.1 }
+    transition: { staggerChildren: 0.05, delayChildren: 0.05 }
   }
 };
 
 const itemVariants = {
-  hidden: { y: 20, opacity: 0, filter: 'blur(5px)' },
+  hidden: { 
+    y: 20, 
+    opacity: 0, 
+    scale: 0.98 
+  },
   visible: { 
     y: 0, 
     opacity: 1, 
-    filter: 'blur(0px)',
-    transition: { duration: 0.5, ease: [0.25, 0.4, 0.25, 1] } 
-  }
+    scale: 1,
+    transition: { duration: 0.5, ease: TRANSITION_EASE } 
+  },
+  tap: { scale: 0.98, transition: { duration: 0.1 } }
 };
 
 export default function ProfilePage() {
@@ -43,17 +50,24 @@ export default function ProfilePage() {
 
   return (
     <div className="relative w-full h-full bg-black overflow-hidden flex flex-col">
-      {/* HEADER */}
-      <div className="absolute top-12 left-0 right-0 h-[52px] z-50 flex items-center justify-center">
+      {/* HEADER (Z-60) */}
+      <div className="absolute top-14 left-0 right-0 h-[52px] z-[60] flex items-center justify-center">
         <span className="relative z-10 text-[17px] font-bold text-white tracking-tight drop-shadow-md">Профиль</span>
       </div>
 
-      <div className="flex-1 overflow-y-auto no-scrollbar relative">
-        <div className="absolute top-0 left-0 right-0 h-96 bg-[url('https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1000&auto=format&fit=crop')] bg-cover bg-center opacity-40 mask-image-gradient z-0" />
-        <div className="absolute top-0 left-0 right-0 h-96 bg-gradient-to-b from-black/10 via-black/60 to-black z-0" />
+      {/* ГРАДИЕНТЫ (Z-20: Поверх фона, но под контентом и хедером) */}
+      <div className="absolute top-0 left-0 right-0 h-32 z-20 pointer-events-none bg-gradient-to-b from-black/80 via-black/40 to-transparent" />
+      <div className="absolute bottom-0 left-0 right-0 h-48 z-20 pointer-events-none bg-gradient-to-t from-black via-black/95 to-transparent" />
+
+      <div className="flex-1 overflow-y-auto no-scrollbar relative z-10">
+        {/* ФОН (Background Image) */}
+        <div className="absolute top-0 left-0 right-0 h-[500px] z-0">
+           <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1000&auto=format&fit=crop')] bg-cover bg-center opacity-50" />
+           <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/80 to-black" />
+        </div>
 
         <motion.div 
-          className="relative z-10 pt-32 px-6 pb-32 flex flex-col items-center"
+          className="relative z-10 pt-36 px-6 pb-32 flex flex-col items-center"
           variants={containerVariants}
           initial="hidden"
           animate="visible"
@@ -76,10 +90,25 @@ export default function ProfilePage() {
             <div className="glass-panel p-4 rounded-3xl flex flex-col items-center gap-1"><span className="text-2xl font-black text-white">4.9</span><span className="text-[10px] uppercase text-white/40 tracking-wider">Рейтинг</span></div>
           </motion.div>
 
-          {/* Menu */}
+          {/* Menu Buttons (Плавная анимация) */}
           <div className="w-full space-y-3">
-            <motion.button variants={itemVariants} className="w-full p-5 rounded-[24px] bg-white/5 border border-white/5 flex items-center gap-4 active:scale-[0.98] transition-all"><div className="p-2 bg-white/10 rounded-xl text-white"><Edit3 size={20} /></div><span className="font-bold text-white text-lg flex-1 text-left">Редактировать профиль</span></motion.button>
-            <motion.button variants={itemVariants} className="w-full p-5 rounded-[24px] bg-white/5 border border-white/5 flex items-center gap-4 active:scale-[0.98] transition-all"><div className="p-2 bg-white/10 rounded-xl text-white"><Settings size={20} /></div><span className="font-bold text-white text-lg flex-1 text-left">Настройки</span></motion.button>
+            <motion.button 
+              variants={itemVariants} 
+              whileTap="tap"
+              className="w-full p-5 rounded-[24px] bg-white/5 border border-white/5 flex items-center gap-4 active:bg-white/10 transition-colors"
+            >
+              <div className="p-2 bg-white/10 rounded-xl text-white"><Edit3 size={20} /></div>
+              <span className="font-bold text-white text-lg flex-1 text-left">Редактировать профиль</span>
+            </motion.button>
+            
+            <motion.button 
+              variants={itemVariants} 
+              whileTap="tap"
+              className="w-full p-5 rounded-[24px] bg-white/5 border border-white/5 flex items-center gap-4 active:bg-white/10 transition-colors"
+            >
+              <div className="p-2 bg-white/10 rounded-xl text-white"><Settings size={20} /></div>
+              <span className="font-bold text-white text-lg flex-1 text-left">Настройки</span>
+            </motion.button>
           </div>
 
           {debugLogin && (
