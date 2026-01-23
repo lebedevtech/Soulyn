@@ -1,22 +1,32 @@
-import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useEffect } from 'react';
 import clsx from 'clsx';
 
-// Умный контроллер камеры (ОПТИМИЗИРОВАННЫЙ)
+// 1. КОМПОНЕНТ ДЛЯ ОТЛОВА ВЗАИМОДЕЙСТВИЙ
+// Слушает и зум, и драг, чтобы вовремя отключить "слежение"
+function UserInteractionHandler({ onInteraction }) {
+  useMapEvents({
+    dragstart: () => onInteraction && onInteraction(), // Начал тянуть
+    zoomstart: () => onInteraction && onInteraction(), // Начал зумить
+  });
+  return null;
+}
+
+// 2. УМНЫЙ КОНТРОЛЛЕР КАМЕРЫ (INSTANT VERSION)
 function MapController({ center, userLocation, followUser }) {
   const map = useMap();
 
   useEffect(() => {
+    // Работаем только если включено слежение и есть координаты
     if (followUser && userLocation) {
-      // ИСПРАВЛЕНИЕ: Делаем анимацию быстрой и резкой
-      // flyTo с duration 0.6 (было 1.5) создает ощущение мгновенного отклика
-      map.flyTo(userLocation, 15, {
+      // Используем setView для мгновенной реакции вместо медленного flyTo
+      map.setView(userLocation, 15, {
         animate: true,
-        duration: 0.6, // Меньше секунды -> ощущение скорости
-        easeLinearity: 0.5, // Меньше "тупняка" при старте анимации
-        noMoveStart: true // Не блокирует карту лишними событиями
+        duration: 0.5, // Очень быстро (полсекунды)
+        easeLinearity: 1, // Линейно, без "разгона"
+        noMoveStart: true
       });
     }
   }, [userLocation, followUser, map]);
@@ -32,7 +42,7 @@ export default function MapView({
   followUser, 
   onImpulseClick, 
   onVenueClick,
-  onUserInteraction 
+  onUserInteraction // Функция отключения слежения, приходящая сверху
 }) {
   const defaultCenter = [55.7558, 37.6173];
 
@@ -96,19 +106,20 @@ export default function MapView({
       className="w-full h-full z-0 bg-[#050505]"
       zoomControl={false}
     >
+      {/* Контроллер перемещения (по кнопке) */}
       <MapController 
         center={defaultCenter} 
         userLocation={userLocation} 
         followUser={followUser}
       />
       
+      {/* Обработчик действий юзера (драг/зум) */}
+      <UserInteractionHandler onInteraction={onUserInteraction} />
+
       <TileLayer
         url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         attribution='&copy; CARTO'
         maxZoom={20}
-        eventHandlers={{
-          dragstart: () => onUserInteraction && onUserInteraction()
-        }}
       />
 
       {userLocation && (
@@ -122,7 +133,7 @@ export default function MapView({
             key={imp.id} 
             position={[imp.lat, imp.lng]} 
             icon={createSocialIcon(imp.users.avatar_url, imp.users.is_premium)}
-            eventHandlers={{ click: () => { onUserInteraction(); onImpulseClick(imp); } }}
+            eventHandlers={{ click: () => { onUserInteraction && onUserInteraction(); onImpulseClick(imp); } }}
           />
         );
       })}
@@ -132,7 +143,7 @@ export default function MapView({
           key={venue.id} 
           position={[venue.lat, venue.lng]} 
           icon={createVenueIcon(venue.image_url, venue.is_partner)}
-          eventHandlers={{ click: () => { onUserInteraction(); onVenueClick(venue); } }}
+          eventHandlers={{ click: () => { onUserInteraction && onUserInteraction(); onVenueClick(venue); } }}
         />
       ))}
     </MapContainer>
