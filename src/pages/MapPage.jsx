@@ -18,16 +18,20 @@ const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.05, delayChildren: 0.05 }
+    transition: { staggerChildren: 0.04, delayChildren: 0.05 }
   }
 };
 
 const cardVariants = {
-  hidden: { y: 20, opacity: 0, filter: 'blur(5px)', scale: 0.96 },
+  hidden: { 
+    y: 20, 
+    opacity: 0, 
+    // Убрали filter: 'blur(...)', чтобы не было мерцания серого фона
+    scale: 0.96 
+  },
   visible: { 
     y: 0, 
     opacity: 1, 
-    filter: 'blur(0px)',
     scale: 1,
     transition: { duration: 0.5, ease: TRANSITION_EASE } 
   },
@@ -96,7 +100,8 @@ export default function MapPage({ onOpenCreate }) {
     <div className="relative w-full h-full bg-black overflow-hidden">
       
       {/* HEADER */}
-      <div className="absolute top-14 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center pointer-events-none">
+      {/* Z-INDEX ИСПРАВЛЕН: z-60 (выше градиентов z-50) */}
+      <div className="absolute top-14 left-1/2 -translate-x-1/2 z-[60] flex flex-col items-center pointer-events-none">
         <h1 className="text-xl font-black text-white tracking-tighter drop-shadow-2xl leading-none">Soulyn</h1>
         <div className="flex items-center gap-1.5 mt-1">
           <span className={clsx("w-1 h-1 rounded-full animate-pulse shadow-[0_0_10px_rgba(139,92,246,1)]", userLocation ? "bg-blue-500" : "bg-primary")} />
@@ -122,7 +127,7 @@ export default function MapPage({ onOpenCreate }) {
         <MapView impulses={impulses} venues={venues} mode={mapLayer} userLocation={userLocation} followUser={followUser} onUserInteraction={() => setFollowUser(false)} onImpulseClick={setSelectedImpulse} onVenueClick={(venue) => setSelectedVenue(venue)} />
       </div>
 
-      {/* ГРАДИЕНТЫ (Z-50, чтобы накрывать низ шторок для эффекта глубины) */}
+      {/* ГРАДИЕНТЫ (Z-50) */}
       {viewMode === 'list' && (
         <>
           <div className="absolute top-0 left-0 right-0 h-32 z-50 pointer-events-none bg-gradient-to-b from-black via-black/90 to-transparent" />
@@ -155,10 +160,9 @@ export default function MapPage({ onOpenCreate }) {
                    {venues.map(venue => (
                      <motion.button 
                        key={venue.id} 
-                       // Принудительная анимация для каждого элемента
                        initial="hidden"
                        whileInView="visible"
-                       viewport={{ once: true }}
+                       viewport={{ once: true, margin: "0px 0px -50px 0px" }}
                        variants={cardVariants}
                        whileTap="tap"
                        onClick={() => setSelectedVenue(venue)} 
@@ -251,7 +255,6 @@ export default function MapPage({ onOpenCreate }) {
         )}
       </AnimatePresence>
 
-      {/* MODALS - Z-40 (Under the gradients z-50) */}
       <AnimatePresence>
         {selectedImpulse && <ImpulseSheet key="impulse-sheet" impulse={selectedImpulse} onClose={() => setSelectedImpulse(null)} />}
       </AnimatePresence>
