@@ -6,21 +6,22 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import clsx from 'clsx';
 
-// ЭТАЛОННАЯ АНИМАЦИЯ СПИСКА (КАК В NOTIFICATIONS)
+// ЭТАЛОННАЯ АНИМАЦИЯ (КАК В УВЕДОМЛЕНИЯХ)
 const listContainerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.05, delayChildren: 0.1 }
+    transition: { staggerChildren: 0.08, delayChildren: 0.1 }
   }
 };
 
 const itemVariants = {
-  hidden: { y: 20, opacity: 0 },
+  hidden: { y: 20, opacity: 0, scale: 0.95 },
   visible: { 
     y: 0, 
     opacity: 1, 
-    transition: { duration: 0.5, ease: [0.2, 0.8, 0.2, 1] } 
+    scale: 1,
+    transition: { type: "spring", stiffness: 400, damping: 30 }
   }
 };
 
@@ -67,7 +68,8 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="w-full h-full bg-black flex flex-col pt-12 px-6">
+    // ИСПРАВЛЕНИЕ: Увеличили отступ (pt-20), чтобы не наезжать на кнопки Telegram
+    <div className="w-full h-full bg-black flex flex-col pt-20 px-6">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-black text-white tracking-tight">Чаты</h1>
         <div className="p-3 bg-white/5 rounded-full border border-white/5">
@@ -93,7 +95,7 @@ export default function ChatPage() {
           >
             {chats.map((chat) => {
               const partner = chat.initiator_id === user.id ? chat.requester : chat.initiator;
-              if (!partner) return null; // Защита от удаленных юзеров
+              if (!partner) return null;
 
               return (
                 <motion.button

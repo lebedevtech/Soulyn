@@ -11,12 +11,12 @@ import {
 import { useLocation } from '../context/LocationContext';
 import clsx from 'clsx';
 
-// ЭТАЛОННАЯ АНИМАЦИЯ (iOS Style Smoothness)
+// ЭТАЛОННАЯ АНИМАЦИЯ (КАК В УВЕДОМЛЕНИЯХ)
 const overlayVariants = {
   hidden: { opacity: 0 },
   visible: { 
     opacity: 1, 
-    transition: { duration: 0.3, ease: "easeInOut" } // Плавное появление всего слоя (вкл. градиенты)
+    transition: { duration: 0.3 }
   },
   exit: { opacity: 0, transition: { duration: 0.2 } }
 };
@@ -26,20 +26,22 @@ const listContainerVariants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.05, // Очень быстрый каскад
+      staggerChildren: 0.08, // Четкий каскад
       delayChildren: 0.1
     }
   }
 };
 
 const itemVariants = {
-  hidden: { y: 20, opacity: 0 },
+  hidden: { y: 20, opacity: 0, scale: 0.95 },
   visible: { 
     y: 0, 
     opacity: 1, 
+    scale: 1,
     transition: { 
-      duration: 0.5, 
-      ease: [0.2, 0.8, 0.2, 1] // Кривая Безье: мягкий старт, плавная остановка (без дрожания)
+      type: "spring", 
+      stiffness: 400, 
+      damping: 30 // Мягкая, но быстрая пружина (как в iOS уведомлениях)
     } 
   }
 };
@@ -142,11 +144,9 @@ export default function MapPage({ onOpenCreate }) {
             exit="exit"
             className="absolute inset-0 z-10 bg-black/60 backdrop-blur-xl"
           >
-            {/* ГРАДИЕНТЫ ТЕПЕРЬ ВНУТРИ motion.div И ПОЯВЛЯЮТСЯ ПЛАВНО ВМЕСТЕ С ФОНОМ */}
             <div className="absolute top-0 left-0 right-0 h-32 z-20 pointer-events-none bg-gradient-to-b from-black via-black/90 to-transparent" />
             <div className="absolute bottom-0 left-0 right-0 h-48 z-20 pointer-events-none bg-gradient-to-t from-black via-black/95 to-transparent" />
 
-            {/* КОНТЕНТ */}
             <div className="w-full h-full overflow-y-auto no-scrollbar pt-32 pb-48 px-6 relative z-10">
               {mapLayer === 'places' ? (
                 <motion.section variants={listContainerVariants} initial="hidden" animate="visible">
