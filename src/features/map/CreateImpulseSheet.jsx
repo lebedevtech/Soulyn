@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, Send, MapPin, Navigation, Coffee, Pizza, 
   Film, Star, Ghost, Clock, ChevronRight, ChevronLeft,
-  Search, Sparkles, Martini, Briefcase, Users, Eye
+  Search, Sparkles, Martini, Briefcase, Users, Heart
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
@@ -12,11 +12,11 @@ import clsx from 'clsx';
 
 const SHEET_TRANSITION = { duration: 0.5, ease: [0.22, 1, 0.36, 1] };
 
-// Анимация теперь по вертикали (y)
+// Вертикальная анимация появления контента
 const STEP_VARIANTS = {
-  enter: { y: 100, opacity: 0 },
+  enter: { y: 40, opacity: 0 },
   center: { y: 0, opacity: 1 },
-  exit: { y: -50, opacity: 0 },
+  exit: { y: -20, opacity: 0 },
 };
 
 const VIBES = [
@@ -26,7 +26,7 @@ const VIBES = [
   { id: 'date', label: 'Date', icon: Sparkles, color: 'text-red-400' },
 ];
 
-const TIME_SLOTS = ["Сейчас", "Через 30 мин", "Через 1 час", "Вечером"];
+const TIME_SLOTS = ["Сейчас", "В течение 30 мин", "Через 1 час", "Вечером"];
 
 export default function CreateImpulseSheet({ isOpen, initialData, onClose }) {
   const { user } = useAuth();
@@ -37,7 +37,7 @@ export default function CreateImpulseSheet({ isOpen, initialData, onClose }) {
   const [message, setMessage] = useState('');
   const [vibe, setVibe] = useState('chill');
   const [plannedTime, setPlannedTime] = useState("Сейчас");
-  const [exclusivity, setExclusivity] = useState('everyone'); // everyone, matches, girls
+  const [exclusivity, setExclusivity] = useState('everyone'); 
   const [isGhost, setIsGhost] = useState(false);
   const [isSending, setIsSending] = useState(false);
 
@@ -95,163 +95,160 @@ export default function CreateImpulseSheet({ isOpen, initialData, onClose }) {
           <motion.div 
             initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
             transition={SHEET_TRANSITION}
-            className="fixed bottom-0 left-0 right-0 z-[110] bg-[#0A0A0A] rounded-t-[48px] border-t border-white/5 p-8 pb-12 shadow-2xl overflow-hidden"
+            className="fixed bottom-0 left-0 right-0 z-[110] bg-[#0A0A0A] rounded-t-[48px] border-t border-white/5 p-6 pb-12 shadow-2xl overflow-hidden"
           >
             {/* Тонкий индикатор прогресса */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-white/5">
               <motion.div 
-                className="h-full bg-primary shadow-[0_0_10px_rgba(139,92,246,0.8)]"
+                className="h-full bg-primary"
                 animate={{ width: `${(step / 5) * 100}%` }}
               />
             </div>
 
-            <div className="flex justify-between items-center mb-10">
+            <div className="flex justify-between items-center mb-6">
               {step > 1 ? (
                 <button onClick={prevStep} className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 text-white/40"><ChevronLeft size={20} /></button>
               ) : <div className="w-10" />}
-              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white/20">Step 0{step}</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white/10">Step 0{step}</span>
               <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 text-white/40"><X size={20} /></button>
             </div>
 
-            <div className="relative min-h-[420px]">
+            <div className="relative min-h-[400px]">
               <AnimatePresence mode="wait">
                 
-                {/* ШАГ 1: ВЫБОР МЕСТА */}
                 {step === 1 && (
-                  <motion.div key="step1" variants={STEP_VARIANTS} initial="enter" animate="center" exit="exit" transition={{ duration: 0.4 }}>
-                    <h2 className="text-3xl font-black text-white tracking-tighter mb-2">Location</h2>
-                    <p className="text-white/40 text-sm mb-8 font-medium">Куда отправимся сегодня?</p>
+                  <motion.div key="step1" variants={STEP_VARIANTS} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }}>
+                    <h2 className="text-2xl font-black text-white tracking-tighter mb-1">Место встречи</h2>
+                    <p className="text-white/40 text-xs mb-6 font-medium">Куда отправимся сегодня?</p>
                     
-                    <div className="relative mb-8">
+                    <div className="relative mb-6">
                       <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={18} />
                       <input 
                         placeholder="Найти заведение..."
-                        className="w-full h-14 bg-white/[0.03] border border-white/10 rounded-2xl pl-12 pr-4 text-white placeholder:text-white/20 focus:outline-none focus:border-primary/40 transition-all"
+                        className="w-full h-12 bg-white/[0.03] border border-white/10 rounded-2xl pl-12 pr-4 text-white placeholder:text-white/20 focus:outline-none focus:border-primary/40 transition-all text-sm"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                       />
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {popularVenues.map(venue => (
-                        <button key={venue.id} onClick={() => { setSelectedVenue(venue); nextStep(); }} className="w-full p-4 rounded-3xl bg-white/[0.02] border border-white/5 flex items-center gap-4 active:bg-white/5 transition-colors">
-                          <img src={venue.image_url} className="w-14 h-14 rounded-2xl object-cover shadow-2xl" />
+                        <button key={venue.id} onClick={() => { setSelectedVenue(venue); nextStep(); }} className="w-full p-3 rounded-[24px] bg-white/[0.02] border border-white/5 flex items-center gap-3 active:bg-white/5 transition-colors">
+                          <img src={venue.image_url} className="w-12 h-12 rounded-xl object-cover shadow-2xl" />
                           <div className="text-left flex-1">
-                            <p className="font-bold text-white text-[15px]">{venue.name}</p>
-                            <p className="text-[10px] text-white/30 uppercase font-black tracking-widest mt-1">{venue.average_check}</p>
+                            <p className="font-bold text-white text-sm">{venue.name}</p>
+                            <p className="text-[9px] text-white/30 uppercase font-black tracking-widest mt-0.5">{venue.average_check}</p>
                           </div>
-                          <ChevronRight size={18} className="text-white/10" />
+                          <ChevronRight size={16} className="text-white/10" />
                         </button>
                       ))}
                     </div>
                   </motion.div>
                 )}
 
-                {/* ШАГ 2: ВАЙБ И ВРЕМЯ */}
                 {step === 2 && (
-                  <motion.div key="step2" variants={STEP_VARIANTS} initial="enter" animate="center" exit="exit" transition={{ duration: 0.4 }}>
-                    <h2 className="text-3xl font-black text-white tracking-tighter mb-2">Vibe & Time</h2>
-                    <p className="text-white/40 text-sm mb-8 font-medium">Настроение и время встречи</p>
+                  <motion.div key="step2" variants={STEP_VARIANTS} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }}>
+                    <h2 className="text-2xl font-black text-white tracking-tighter mb-1">Настроение и время</h2>
+                    <p className="text-white/40 text-xs mb-6 font-medium">Когда и в каком вайбе?</p>
                     
-                    <div className="grid grid-cols-2 gap-3 mb-8">
+                    <div className="grid grid-cols-2 gap-2 mb-6">
                       {VIBES.map(v => (
-                        <button key={v.id} onClick={() => setVibe(v.id)} className={clsx("p-5 rounded-[32px] border flex flex-col items-start gap-3 transition-all", vibe === v.id ? "bg-white text-black border-white shadow-2xl shadow-white/10" : "bg-white/[0.03] border-white/5 text-white/60")}>
-                          <v.icon size={20} className={vibe === v.id ? "text-black" : v.color} />
-                          <span className="font-bold text-sm tracking-tight">{v.label}</span>
+                        <button key={v.id} onClick={() => setVibe(v.id)} className={clsx("p-4 rounded-[28px] border flex flex-col items-start gap-2 transition-all", vibe === v.id ? "bg-white text-black border-white" : "bg-white/[0.03] border-white/5 text-white/60")}>
+                          <v.icon size={18} className={vibe === v.id ? "text-black" : v.color} />
+                          <span className="font-bold text-xs tracking-tight">{v.label}</span>
                         </button>
                       ))}
                     </div>
 
-                    <div className="p-1.5 bg-white/[0.03] rounded-2xl border border-white/5 flex gap-1">
-                      {TIME_SLOTS.map(t => (
-                        <button key={t} onClick={() => setPlannedTime(t)} className={clsx("flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all", plannedTime === t ? "bg-white text-black shadow-lg" : "text-white/20")}>
-                          {t}
-                        </button>
-                      ))}
+                    <div className="space-y-2">
+                      <h3 className="text-[9px] font-black text-white/20 uppercase tracking-widest mb-2 ml-1">Планируемое время</h3>
+                      <div className="p-1 bg-white/[0.03] rounded-2xl border border-white/5 flex flex-wrap gap-1">
+                        {TIME_SLOTS.map(t => (
+                          <button key={t} onClick={() => setPlannedTime(t)} className={clsx("flex-1 py-3 px-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all", plannedTime === t ? "bg-white text-black" : "text-white/20")}>
+                            {t}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                     
-                    <button onClick={nextStep} className="w-full mt-8 py-4 rounded-3xl bg-white text-black font-black text-sm uppercase tracking-widest active:scale-95 transition-transform">Далее</button>
+                    <button onClick={nextStep} className="w-full mt-8 py-4 rounded-2xl bg-white text-black font-black text-xs uppercase tracking-widest active:scale-95 transition-transform">Далее</button>
                   </motion.div>
                 )}
 
-                {/* ШАГ 3: СООБЩЕНИЕ */}
                 {step === 3 && (
-                  <motion.div key="step3" variants={STEP_VARIANTS} initial="enter" animate="center" exit="exit" transition={{ duration: 0.4 }}>
-                    <h2 className="text-3xl font-black text-white tracking-tighter mb-2">Plan</h2>
-                    <p className="text-white/40 text-sm mb-8 font-medium">Коротко о твоих планах</p>
+                  <motion.div key="step3" variants={STEP_VARIANTS} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }}>
+                    <h2 className="text-2xl font-black text-white tracking-tighter mb-1">Планы</h2>
+                    <p className="text-white/40 text-xs mb-6 font-medium">О чем этот импульс?</p>
                     
                     <textarea 
                       autoFocus
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
-                      placeholder="Напиши что-нибудь вдохновляющее..."
-                      className="w-full h-44 bg-white/[0.03] border border-white/10 rounded-[32px] p-6 text-white text-lg font-medium focus:outline-none focus:border-primary/40 transition-all resize-none"
+                      placeholder="Опишите ваши планы..."
+                      className="w-full h-36 bg-white/[0.03] border border-white/10 rounded-[28px] p-5 text-white text-base font-medium focus:outline-none focus:border-primary/40 transition-all resize-none"
                     />
                     
-                    <button onClick={nextStep} disabled={!message.trim()} className="w-full mt-6 py-4 rounded-3xl bg-white text-black font-black text-sm uppercase tracking-widest disabled:opacity-20 transition-all">Подтвердить</button>
+                    <button onClick={nextStep} disabled={!message.trim()} className="w-full mt-6 py-4 rounded-2xl bg-white text-black font-black text-xs uppercase tracking-widest disabled:opacity-20 transition-all">Подтвердить</button>
                   </motion.div>
                 )}
 
-                {/* ШАГ 4: EXCLUSIVITY */}
                 {step === 4 && (
-                  <motion.div key="step4" variants={STEP_VARIANTS} initial="enter" animate="center" exit="exit" transition={{ duration: 0.4 }}>
-                    <h2 className="text-3xl font-black text-white tracking-tighter mb-2">Exclusivity</h2>
-                    <p className="text-white/40 text-sm mb-8 font-medium">Кто увидит твой импульс?</p>
+                  <motion.div key="step4" variants={STEP_VARIANTS} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }}>
+                    <h2 className="text-2xl font-black text-white tracking-tighter mb-1">Приватность</h2>
+                    <p className="text-white/40 text-xs mb-6 font-medium">Кто увидит твой импульс?</p>
                     
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {[
-                        { id: 'everyone', label: 'Для всех', desc: 'Виден всем пользователям в радиусе 2км', icon: Users },
-                        { id: 'matches', label: 'Только мэтчи', desc: 'Увидят те, с кем у тебя взаимная симпатия', icon: Heart },
-                        { id: 'girls', label: 'Girls Only', desc: 'Виден только прекрасной половине Soulyn', icon: Sparkles },
+                        { id: 'everyone', label: 'Для всех', desc: 'Виден всем в радиусе 2км', icon: Users },
+                        { id: 'matches', label: 'Только мэтчи', desc: 'Для тех, с кем есть взаимность', icon: Heart },
+                        { id: 'girls', label: 'Girls Only', desc: 'Виден только девушкам', icon: Sparkles },
                       ].map(opt => (
-                        <button key={opt.id} onClick={() => setExclusivity(opt.id)} className={clsx("w-full p-5 rounded-[32px] border flex items-center gap-4 transition-all", exclusivity === opt.id ? "bg-primary border-primary text-white shadow-xl shadow-primary/20" : "bg-white/[0.03] border-white/5 text-white/40")}>
-                          <div className="p-3 bg-black/20 rounded-2xl"><opt.icon size={20} /></div>
+                        <button key={opt.id} onClick={() => setExclusivity(opt.id)} className={clsx("w-full p-4 rounded-[28px] border flex items-center gap-4 transition-all", exclusivity === opt.id ? "bg-primary border-primary text-white" : "bg-white/[0.03] border-white/5 text-white/40")}>
+                          <div className="p-2.5 bg-black/20 rounded-xl"><opt.icon size={18} /></div>
                           <div className="text-left flex-1">
-                             <p className="font-bold text-[15px]">{opt.label}</p>
-                             <p className="text-[10px] font-medium opacity-60 mt-0.5">{opt.desc}</p>
+                             <p className="font-bold text-sm">{opt.label}</p>
+                             <p className="text-[9px] font-medium opacity-60">{opt.desc}</p>
                           </div>
                         </button>
                       ))}
                     </div>
                     
-                    <button onClick={nextStep} className="w-full mt-8 py-4 rounded-3xl bg-white text-black font-black text-sm uppercase tracking-widest active:scale-95 transition-transform">Просмотр</button>
+                    <button onClick={nextStep} className="w-full mt-8 py-4 rounded-2xl bg-white text-black font-black text-xs uppercase tracking-widest active:scale-95 transition-transform">К просмотру</button>
                   </motion.div>
                 )}
 
-                {/* ШАГ 5: REVIEW & PUBLISH */}
                 {step === 5 && (
-                  <motion.div key="step5" variants={STEP_VARIANTS} initial="enter" animate="center" exit="exit" transition={{ duration: 0.4 }}>
-                    <h2 className="text-3xl font-black text-white tracking-tighter mb-2">Review</h2>
-                    <p className="text-white/40 text-sm mb-8 font-medium">Проверь детали перед публикацией</p>
+                  <motion.div key="step5" variants={STEP_VARIANTS} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }}>
+                    <h2 className="text-2xl font-black text-white tracking-tighter mb-1">Резюме</h2>
+                    <p className="text-white/40 text-xs mb-6 font-medium">Проверьте детали перед публикацией</p>
                     
-                    <div className="bg-white/[0.03] border border-white/5 rounded-[40px] p-8 mb-10 relative overflow-hidden">
-                       <div className="absolute top-0 right-0 p-4 opacity-5"><Sparkles size={80} /></div>
-                       <div className="flex items-center gap-3 mb-4">
-                         <div className="px-3 py-1 bg-primary/20 text-primary rounded-full text-[10px] font-black uppercase tracking-tighter">{vibe}</div>
-                         <div className="px-3 py-1 bg-white/10 text-white/40 rounded-full text-[10px] font-black uppercase tracking-tighter">{plannedTime}</div>
+                    <div className="bg-white/[0.03] border border-white/5 rounded-[32px] p-6 mb-6 relative overflow-hidden">
+                       <div className="flex items-center gap-2 mb-3">
+                         <div className="px-2 py-0.5 bg-primary/20 text-primary rounded-md text-[9px] font-black uppercase tracking-tighter">{vibe}</div>
+                         <div className="px-2 py-0.5 bg-white/10 text-white/40 rounded-md text-[9px] font-black uppercase tracking-tighter">{plannedTime}</div>
                        </div>
-                       <p className="text-xl font-bold text-white mb-6 leading-relaxed">"{message}"</p>
-                       <div className="flex items-center gap-2 text-white/30 text-xs font-bold uppercase tracking-widest">
-                          <MapPin size={14} className="text-primary" /> {selectedVenue?.name || "Твое местоположение"}
+                       <p className="text-lg font-bold text-white mb-4 leading-relaxed">"{message}"</p>
+                       <div className="flex items-center gap-1.5 text-white/30 text-[10px] font-bold uppercase tracking-widest">
+                          <MapPin size={12} className="text-primary" /> {selectedVenue?.name || "Моя геопозиция"}
                        </div>
                     </div>
 
-                    <div className="flex gap-4 mb-8">
-                       <button onClick={() => setIsGhost(!isGhost)} className={clsx("flex-1 p-4 rounded-3xl border flex flex-col items-center gap-2 transition-all", isGhost ? "bg-white text-black border-white" : "bg-white/[0.03] border-white/10 text-white/40")}>
-                          <Ghost size={20} />
-                          <span className="text-[10px] font-bold uppercase tracking-widest">Ghost</span>
+                    <div className="flex gap-2 mb-6">
+                       <button onClick={() => setIsGhost(!isGhost)} className={clsx("flex-1 p-3 rounded-2xl border flex items-center justify-center gap-2 transition-all", isGhost ? "bg-white text-black border-white" : "bg-white/[0.03] border-white/10 text-white/40")}>
+                          <Ghost size={16} />
+                          <span className="text-[9px] font-bold uppercase tracking-widest">Ghost</span>
                        </button>
-                       <div className="flex-1 p-4 rounded-3xl bg-white/[0.03] border border-white/10 flex flex-col items-center gap-2 text-white/40">
-                          <Clock size={20} />
-                          <span className="text-[10px] font-bold uppercase tracking-widest">4 Часа</span>
+                       <div className="flex-1 p-3 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-center gap-2 text-white/40">
+                          <Clock size={16} />
+                          <span className="text-[9px] font-bold uppercase tracking-widest">4 Часа</span>
                        </div>
                     </div>
 
                     <motion.button 
                       whileTap={{ scale: 0.98 }} onClick={handleCreate} disabled={isSending}
-                      className="w-full py-5 rounded-[28px] bg-primary text-white font-black text-xl flex items-center justify-center gap-3 shadow-2xl shadow-primary/40"
+                      className="w-full py-4 rounded-[24px] bg-primary text-white font-black text-lg flex items-center justify-center gap-2 shadow-2xl shadow-primary/40"
                     >
-                      {isSending ? 'Sending...' : <>Publish <Send size={22} /></>}
+                      {isSending ? '...' : <>Опубликовать <Send size={20} /></>}
                     </motion.button>
                   </motion.div>
                 )}
