@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import MapView from '../features/map/MapView';
 import ImpulseSheet from '../features/map/ImpulseSheet';
+import VenueSheet from '../features/map/VenueSheet'; // Импорт новой шторки
 import { 
   LayoutGrid, 
   Map as MapIcon, 
@@ -39,27 +40,32 @@ const MapToggle = ({ mode, setMode }) => (
 );
 
 export default function MapPage() {
-  const [viewMode, setViewMode] = useState('map'); 
-  const [mapLayer, setMapLayer] = useState('social');
+  const [viewMode, setViewMode] = useState('map'); // 'map' | 'list'
+  const [mapLayer, setMapLayer] = useState('social'); // 'social' | 'places'
   
   const [selectedImpulse, setSelectedImpulse] = useState(null);
+  const [selectedVenue, setSelectedVenue] = useState(null); // Состояние для выбранного места
+  
   const [impulses, setImpulses] = useState([]);
   const [venues, setVenues] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
+      // 1. Загрузка импульсов
       const { data: impData } = await supabase
         .from('impulses')
         .select(`*, users (*), venues (name)`)
         .order('created_at', { ascending: false });
       if (impData) setImpulses(impData);
 
+      // 2. Загрузка заведений
       const { data: venueData } = await supabase.from('venues').select('*');
       if (venueData) setVenues(venueData);
     };
 
     fetchData();
 
+    // 3. Подписка на Realtime
     const channel = supabase
       .channel('public:impulses')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'impulses' }, async (payload) => {
@@ -78,8 +84,7 @@ export default function MapPage() {
   return (
     <div className="relative w-full h-full bg-black overflow-hidden">
       
-      {/* 1. ЛОГОТИП (БЕЗОПАСНАЯ ЗОНА: top-14) */}
-      {/* Увеличили отступ до 56px, чтобы гарантированно выйти из под челки */}
+      {/* 1. ЛОГОТИП (ПО ЦЕНТРУ СВЕРХУ) */}
       <div className="absolute top-14 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center pointer-events-none">
         <h1 className="text-xl font-black text-white tracking-tighter drop-shadow-2xl leading-none">Soulyn</h1>
         <div className="flex items-center gap-1.5 mt-1">
@@ -100,7 +105,7 @@ export default function MapPage() {
           venues={venues} 
           mode={mapLayer} 
           onImpulseClick={setSelectedImpulse} 
-          onVenueClick={(venue) => alert(venue.name)} 
+          onVenueClick={(venue) => setSelectedVenue(venue)} // Открываем шторку места
         />
       </div>
 
@@ -130,7 +135,7 @@ export default function MapPage() {
         </button>
       </div>
 
-      {/* 5. СПИСОК (Отступ pt-32, чтобы список начинался под логотипом) */}
+      {/* 5. СПИСОК (List View) */}
       <AnimatePresence>
         {viewMode === 'list' && (
           <div className="absolute inset-0 z-10">
@@ -146,14 +151,19 @@ export default function MapPage() {
                    <h3 className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] mb-6 ml-1">Лучшие места</h3>
                    <div className="space-y-4">
                      {venues.map(venue => (
-                       <div key={venue.id} className="glass-panel p-4 rounded-[24px] flex gap-4 active:scale-[0.98] transition-transform">
-                         <img src={venue.image_url} className="w-20 h-20 rounded-xl object-cover shadow-lg" />
+                       // Клик по карточке списка тоже открывает шторку
+                       <button 
+                         key={venue.id} 
+                         onClick={() => setSelectedVenue(venue)}
+                         className="w-full glass-panel p-4 rounded-[24px] flex gap-4 active:scale-[0.98] transition-transform text-left"
+                       >
+                         <img src={venue.image_url} className="w-20 h-20 rounded-xl object-cover shadow-lg" alt={venue.name} />
                          <div>
                            <h3 className="text-white font-bold text-lg leading-tight">{venue.name}</h3>
                            <p className="text-white/50 text-xs mt-1 line-clamp-2 leading-relaxed">{venue.description}</p>
                            <span className="inline-block mt-2 px-2 py-1 bg-white/10 rounded text-[10px] text-white font-bold uppercase tracking-wider">{venue.average_check}</span>
                          </div>
-                       </div>
+                       </button>
                      ))}
                    </div>
                 </section>
@@ -173,7 +183,7 @@ export default function MapPage() {
                           )}
                         >
                           <div className="w-14 h-14 rounded-full border-2 border-primary/20 p-0.5 shrink-0 relative">
-                            <img src={user.avatar_url || 'https://i.pravatar.cc/150'} className="w-full h-full rounded-full object-cover" />
+                            <img src={user.avatar_url || 'https://i.pravatar.cc/150'} className="w-full h-full rounded-full object-cover" alt="" />
                             {user.is_premium && <div className="absolute -top-1 -right-1 bg-black rounded-full p-1 border border-yellow-500"><Star size={10} className="text-yellow-400 fill-yellow-400" /></div>}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -194,7 +204,18 @@ export default function MapPage() {
         )}
       </AnimatePresence>
 
+      {/* ШТОРКА ИМПУЛЬСА (Social) */}
       <ImpulseSheet impulse={selectedImpulse} onClose={() => setSelectedImpulse(null)} />
+      
+      {/* ШТОРКА ЗАВЕДЕНИЯ (Places) */}
+      <VenueSheet 
+        venue={selectedVenue} 
+        onClose={() => setSelectedVenue(null)}
+        onCreateImpulse={(venue) => {
+          setSelectedVenue(null);
+          alert(`Скоро: Создание импульса в ${venue.name}`);
+        }} 
+      />
     </div>
   );
 }
