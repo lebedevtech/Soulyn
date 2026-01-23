@@ -3,18 +3,20 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, Send, MapPin, Navigation, Coffee, Pizza, 
   Film, Star, Ghost, Clock, ChevronRight, ChevronLeft,
-  Search, Users, Sparkles, Martini, Briefcase
+  Search, Sparkles, Martini, Briefcase, Users, Eye
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useLocation } from '../../context/LocationContext';
 import clsx from 'clsx';
 
-const SHEET_TRANSITION = { duration: 0.4, ease: [0.25, 1, 0.5, 1] };
+const SHEET_TRANSITION = { duration: 0.5, ease: [0.22, 1, 0.36, 1] };
+
+// Анимация теперь по вертикали (y)
 const STEP_VARIANTS = {
-  enter: (direction) => ({ x: direction > 0 ? 300 : -300, opacity: 0 }),
-  center: { x: 0, opacity: 1 },
-  exit: (direction) => ({ x: direction < 0 ? 300 : -300, opacity: 0 }),
+  enter: { y: 100, opacity: 0 },
+  center: { y: 0, opacity: 1 },
+  exit: { y: -50, opacity: 0 },
 };
 
 const VIBES = [
@@ -24,22 +26,21 @@ const VIBES = [
   { id: 'date', label: 'Date', icon: Sparkles, color: 'text-red-400' },
 ];
 
+const TIME_SLOTS = ["Сейчас", "Через 30 мин", "Через 1 час", "Вечером"];
+
 export default function CreateImpulseSheet({ isOpen, initialData, onClose }) {
   const { user } = useAuth();
   const { location: gpsLocation } = useLocation();
 
   const [step, setStep] = useState(1);
-  const [direction, setDirection] = useState(0);
-  
-  // Данные импульса
   const [selectedVenue, setSelectedVenue] = useState(null);
   const [message, setMessage] = useState('');
   const [vibe, setVibe] = useState('chill');
-  const [expiry, setExpiry] = useState(4);
+  const [plannedTime, setPlannedTime] = useState("Сейчас");
+  const [exclusivity, setExclusivity] = useState('everyone'); // everyone, matches, girls
   const [isGhost, setIsGhost] = useState(false);
   const [isSending, setIsSending] = useState(false);
 
-  // Для поиска заведений
   const [searchQuery, setSearchQuery] = useState('');
   const [popularVenues, setPopularVenues] = useState([]);
 
@@ -49,19 +50,19 @@ export default function CreateImpulseSheet({ isOpen, initialData, onClose }) {
       setMessage('');
       if (initialData?.venue) {
         setSelectedVenue(initialData.venue);
-        setStep(2); // Если заведение уже выбрано, идем ко второму шагу
+        setStep(2); 
       }
       fetchPopularVenues();
     }
   }, [isOpen, initialData]);
 
   const fetchPopularVenues = async () => {
-    const { data } = await supabase.from('venues').select('*').limit(4);
+    const { data } = await supabase.from('venues').select('*').limit(3);
     if (data) setPopularVenues(data);
   };
 
-  const nextStep = () => { setDirection(1); setStep(s => s + 1); };
-  const prevStep = () => { setDirection(-1); setStep(s => s - 1); };
+  const nextStep = () => setStep(s => s + 1);
+  const prevStep = () => setStep(s => s - 1);
 
   const handleCreate = async () => {
     setIsSending(true);
@@ -70,11 +71,11 @@ export default function CreateImpulseSheet({ isOpen, initialData, onClose }) {
 
     const { error } = await supabase.from('impulses').insert([{
       user_id: user.id,
-      message: `${vibe.toUpperCase()}: ${message}`,
+      message: `${vibe.toUpperCase()} • ${plannedTime}: ${message}`,
       lat, lng,
       venue_id: selectedVenue?.id || null,
       is_ghost: isGhost,
-      expires_at: new Date(Date.now() + expiry * 60 * 60 * 1000).toISOString()
+      expires_at: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString()
     }]);
 
     setIsSending(false);
@@ -88,171 +89,173 @@ export default function CreateImpulseSheet({ isOpen, initialData, onClose }) {
           <motion.div 
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm"
+            className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md"
           />
           
           <motion.div 
             initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
             transition={SHEET_TRANSITION}
-            className="fixed bottom-0 left-0 right-0 z-[110] bg-[#121212] rounded-t-[40px] border-t border-white/10 p-6 pb-12 shadow-2xl overflow-hidden"
+            className="fixed bottom-0 left-0 right-0 z-[110] bg-[#0A0A0A] rounded-t-[48px] border-t border-white/5 p-8 pb-12 shadow-2xl overflow-hidden"
           >
-            {/* Progress Bar */}
+            {/* Тонкий индикатор прогресса */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-white/5">
               <motion.div 
-                className="h-full bg-primary"
-                initial={{ width: "25%" }}
-                animate={{ width: `${(step / 4) * 100}%` }}
+                className="h-full bg-primary shadow-[0_0_10px_rgba(139,92,246,0.8)]"
+                animate={{ width: `${(step / 5) * 100}%` }}
               />
             </div>
 
-            <div className="w-12 h-1 bg-white/10 rounded-full mx-auto mb-8 mt-2" />
-
-            {/* Header Navigation */}
-            <div className="flex justify-between items-center mb-8">
+            <div className="flex justify-between items-center mb-10">
               {step > 1 ? (
-                <button onClick={prevStep} className="p-2 -ml-2 text-white/40 hover:text-white transition-colors"><ChevronLeft size={24} /></button>
+                <button onClick={prevStep} className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 text-white/40"><ChevronLeft size={20} /></button>
               ) : <div className="w-10" />}
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20">Шаг {step} из 4</span>
-              <button onClick={onClose} className="p-2 -mr-2 text-white/40 hover:text-white transition-colors"><X size={24} /></button>
+              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white/20">Step 0{step}</span>
+              <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 text-white/40"><X size={20} /></button>
             </div>
 
-            <div className="relative min-h-[380px]">
-              <AnimatePresence mode="wait" custom={direction}>
+            <div className="relative min-h-[420px]">
+              <AnimatePresence mode="wait">
+                
+                {/* ШАГ 1: ВЫБОР МЕСТА */}
                 {step === 1 && (
-                  <motion.div key="step1" custom={direction} variants={STEP_VARIANTS} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }}>
-                    <h2 className="text-3xl font-black text-white tracking-tight mb-2">Куда идем?</h2>
-                    <p className="text-white/40 text-sm mb-6">Выберите эксклюзивное место для встречи</p>
+                  <motion.div key="step1" variants={STEP_VARIANTS} initial="enter" animate="center" exit="exit" transition={{ duration: 0.4 }}>
+                    <h2 className="text-3xl font-black text-white tracking-tighter mb-2">Location</h2>
+                    <p className="text-white/40 text-sm mb-8 font-medium">Куда отправимся сегодня?</p>
                     
-                    <div className="relative mb-6">
+                    <div className="relative mb-8">
                       <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={18} />
                       <input 
-                        placeholder="Поиск заведений..."
-                        className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl pl-12 pr-4 text-white focus:outline-none focus:border-primary/50 transition-all"
+                        placeholder="Найти заведение..."
+                        className="w-full h-14 bg-white/[0.03] border border-white/10 rounded-2xl pl-12 pr-4 text-white placeholder:text-white/20 focus:outline-none focus:border-primary/40 transition-all"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                       />
                     </div>
 
                     <div className="space-y-3">
-                      <h3 className="text-[10px] font-black text-primary uppercase tracking-widest mb-4">Популярные локации</h3>
                       {popularVenues.map(venue => (
-                        <button 
-                          key={venue.id}
-                          onClick={() => { setSelectedVenue(venue); nextStep(); }}
-                          className="w-full p-3 rounded-2xl bg-white/5 border border-white/5 flex items-center gap-4 active:scale-[0.98] transition-all"
-                        >
-                          <img src={venue.image_url} className="w-12 h-12 rounded-xl object-cover" />
+                        <button key={venue.id} onClick={() => { setSelectedVenue(venue); nextStep(); }} className="w-full p-4 rounded-3xl bg-white/[0.02] border border-white/5 flex items-center gap-4 active:bg-white/5 transition-colors">
+                          <img src={venue.image_url} className="w-14 h-14 rounded-2xl object-cover shadow-2xl" />
                           <div className="text-left flex-1">
-                            <p className="font-bold text-white text-sm">{venue.name}</p>
-                            <p className="text-[10px] text-white/30 uppercase font-black">{venue.average_check}</p>
+                            <p className="font-bold text-white text-[15px]">{venue.name}</p>
+                            <p className="text-[10px] text-white/30 uppercase font-black tracking-widest mt-1">{venue.average_check}</p>
                           </div>
-                          <ChevronRight size={18} className="text-white/20" />
+                          <ChevronRight size={18} className="text-white/10" />
                         </button>
                       ))}
-                      <button 
-                        onClick={() => { setSelectedVenue(null); nextStep(); }}
-                        className="w-full p-4 rounded-2xl border border-dashed border-white/10 text-white/40 font-bold text-sm"
-                      >
-                        Пропустить выбор места
-                      </button>
                     </div>
                   </motion.div>
                 )}
 
+                {/* ШАГ 2: ВАЙБ И ВРЕМЯ */}
                 {step === 2 && (
-                  <motion.div key="step2" custom={direction} variants={STEP_VARIANTS} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }}>
-                    <h2 className="text-3xl font-black text-white tracking-tight mb-2">Настроение</h2>
-                    <p className="text-white/40 text-sm mb-8">Какой вайб у этой встречи?</p>
+                  <motion.div key="step2" variants={STEP_VARIANTS} initial="enter" animate="center" exit="exit" transition={{ duration: 0.4 }}>
+                    <h2 className="text-3xl font-black text-white tracking-tighter mb-2">Vibe & Time</h2>
+                    <p className="text-white/40 text-sm mb-8 font-medium">Настроение и время встречи</p>
                     
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-3 mb-8">
                       {VIBES.map(v => (
-                        <button
-                          key={v.id}
-                          onClick={() => { setVibe(v.id); nextStep(); }}
-                          className={clsx(
-                            "p-6 rounded-[32px] border flex flex-col items-start gap-4 transition-all duration-300",
-                            vibe === v.id ? "bg-white text-black border-white shadow-xl shadow-white/10" : "bg-white/5 border-white/5 text-white"
-                          )}
-                        >
-                          <v.icon size={24} className={vibe === v.id ? "text-black" : v.color} />
-                          <span className="font-black text-lg">{v.label}</span>
+                        <button key={v.id} onClick={() => setVibe(v.id)} className={clsx("p-5 rounded-[32px] border flex flex-col items-start gap-3 transition-all", vibe === v.id ? "bg-white text-black border-white shadow-2xl shadow-white/10" : "bg-white/[0.03] border-white/5 text-white/60")}>
+                          <v.icon size={20} className={vibe === v.id ? "text-black" : v.color} />
+                          <span className="font-bold text-sm tracking-tight">{v.label}</span>
                         </button>
                       ))}
                     </div>
+
+                    <div className="p-1.5 bg-white/[0.03] rounded-2xl border border-white/5 flex gap-1">
+                      {TIME_SLOTS.map(t => (
+                        <button key={t} onClick={() => setPlannedTime(t)} className={clsx("flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all", plannedTime === t ? "bg-white text-black shadow-lg" : "text-white/20")}>
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                    
+                    <button onClick={nextStep} className="w-full mt-8 py-4 rounded-3xl bg-white text-black font-black text-sm uppercase tracking-widest active:scale-95 transition-transform">Далее</button>
                   </motion.div>
                 )}
 
+                {/* ШАГ 3: СООБЩЕНИЕ */}
                 {step === 3 && (
-                  <motion.div key="step3" custom={direction} variants={STEP_VARIANTS} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }}>
-                    <h2 className="text-3xl font-black text-white tracking-tight mb-2">Сообщение</h2>
-                    <p className="text-white/40 text-sm mb-8">Что именно вы планируете делать?</p>
+                  <motion.div key="step3" variants={STEP_VARIANTS} initial="enter" animate="center" exit="exit" transition={{ duration: 0.4 }}>
+                    <h2 className="text-3xl font-black text-white tracking-tighter mb-2">Plan</h2>
+                    <p className="text-white/40 text-sm mb-8 font-medium">Коротко о твоих планах</p>
                     
                     <textarea 
                       autoFocus
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
-                      placeholder="Опишите ваши планы..."
-                      className="w-full h-40 bg-white/5 border border-white/10 rounded-3xl p-6 text-white text-xl font-medium focus:outline-none resize-none"
+                      placeholder="Напиши что-нибудь вдохновляющее..."
+                      className="w-full h-44 bg-white/[0.03] border border-white/10 rounded-[32px] p-6 text-white text-lg font-medium focus:outline-none focus:border-primary/40 transition-all resize-none"
                     />
                     
-                    <button 
-                      onClick={nextStep}
-                      disabled={!message.trim()}
-                      className="w-full mt-6 py-4 rounded-2xl bg-white text-black font-bold text-lg disabled:opacity-30 transition-opacity"
-                    >
-                      Далее
-                    </button>
+                    <button onClick={nextStep} disabled={!message.trim()} className="w-full mt-6 py-4 rounded-3xl bg-white text-black font-black text-sm uppercase tracking-widest disabled:opacity-20 transition-all">Подтвердить</button>
                   </motion.div>
                 )}
 
+                {/* ШАГ 4: EXCLUSIVITY */}
                 {step === 4 && (
-                  <motion.div key="step4" custom={direction} variants={STEP_VARIANTS} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }}>
-                    <h2 className="text-3xl font-black text-white tracking-tight mb-2">Финальные штрихи</h2>
-                    <p className="text-white/40 text-sm mb-8">Настройте видимость и время</p>
+                  <motion.div key="step4" variants={STEP_VARIANTS} initial="enter" animate="center" exit="exit" transition={{ duration: 0.4 }}>
+                    <h2 className="text-3xl font-black text-white tracking-tighter mb-2">Exclusivity</h2>
+                    <p className="text-white/40 text-sm mb-8 font-medium">Кто увидит твой импульс?</p>
                     
-                    <div className="space-y-4 mb-10">
-                      <div className="p-4 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Clock className="text-primary" size={20} />
-                          <span className="text-white font-bold">Время жизни</span>
-                        </div>
-                        <div className="flex gap-2">
-                          {[1, 4, 12].map(h => (
-                            <button 
-                              key={h} onClick={() => setExpiry(h)}
-                              className={clsx("px-4 py-2 rounded-xl text-xs font-black transition-all", expiry === h ? "bg-primary text-white" : "bg-white/5 text-white/30")}
-                            >
-                              {h}Ч
-                            </button>
-                          ))}
-                        </div>
-                      </div>
+                    <div className="space-y-3">
+                      {[
+                        { id: 'everyone', label: 'Для всех', desc: 'Виден всем пользователям в радиусе 2км', icon: Users },
+                        { id: 'matches', label: 'Только мэтчи', desc: 'Увидят те, с кем у тебя взаимная симпатия', icon: Heart },
+                        { id: 'girls', label: 'Girls Only', desc: 'Виден только прекрасной половине Soulyn', icon: Sparkles },
+                      ].map(opt => (
+                        <button key={opt.id} onClick={() => setExclusivity(opt.id)} className={clsx("w-full p-5 rounded-[32px] border flex items-center gap-4 transition-all", exclusivity === opt.id ? "bg-primary border-primary text-white shadow-xl shadow-primary/20" : "bg-white/[0.03] border-white/5 text-white/40")}>
+                          <div className="p-3 bg-black/20 rounded-2xl"><opt.icon size={20} /></div>
+                          <div className="text-left flex-1">
+                             <p className="font-bold text-[15px]">{opt.label}</p>
+                             <p className="text-[10px] font-medium opacity-60 mt-0.5">{opt.desc}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                    
+                    <button onClick={nextStep} className="w-full mt-8 py-4 rounded-3xl bg-white text-black font-black text-sm uppercase tracking-widest active:scale-95 transition-transform">Просмотр</button>
+                  </motion.div>
+                )}
 
-                      <button 
-                        onClick={() => setIsGhost(!isGhost)}
-                        className={clsx(
-                          "w-full p-4 rounded-2xl border flex items-center justify-between transition-all",
-                          isGhost ? "bg-white text-black border-white" : "bg-white/5 border-white/5 text-white/40"
-                        )}
-                      >
-                        <div className="flex items-center gap-3">
+                {/* ШАГ 5: REVIEW & PUBLISH */}
+                {step === 5 && (
+                  <motion.div key="step5" variants={STEP_VARIANTS} initial="enter" animate="center" exit="exit" transition={{ duration: 0.4 }}>
+                    <h2 className="text-3xl font-black text-white tracking-tighter mb-2">Review</h2>
+                    <p className="text-white/40 text-sm mb-8 font-medium">Проверь детали перед публикацией</p>
+                    
+                    <div className="bg-white/[0.03] border border-white/5 rounded-[40px] p-8 mb-10 relative overflow-hidden">
+                       <div className="absolute top-0 right-0 p-4 opacity-5"><Sparkles size={80} /></div>
+                       <div className="flex items-center gap-3 mb-4">
+                         <div className="px-3 py-1 bg-primary/20 text-primary rounded-full text-[10px] font-black uppercase tracking-tighter">{vibe}</div>
+                         <div className="px-3 py-1 bg-white/10 text-white/40 rounded-full text-[10px] font-black uppercase tracking-tighter">{plannedTime}</div>
+                       </div>
+                       <p className="text-xl font-bold text-white mb-6 leading-relaxed">"{message}"</p>
+                       <div className="flex items-center gap-2 text-white/30 text-xs font-bold uppercase tracking-widest">
+                          <MapPin size={14} className="text-primary" /> {selectedVenue?.name || "Твое местоположение"}
+                       </div>
+                    </div>
+
+                    <div className="flex gap-4 mb-8">
+                       <button onClick={() => setIsGhost(!isGhost)} className={clsx("flex-1 p-4 rounded-3xl border flex flex-col items-center gap-2 transition-all", isGhost ? "bg-white text-black border-white" : "bg-white/[0.03] border-white/10 text-white/40")}>
                           <Ghost size={20} />
-                          <span className="font-bold">Ghost Mode</span>
-                        </div>
-                        <span className="text-[10px] font-black uppercase tracking-widest">{isGhost ? 'Active' : 'Off'}</span>
-                      </button>
+                          <span className="text-[10px] font-bold uppercase tracking-widest">Ghost</span>
+                       </button>
+                       <div className="flex-1 p-4 rounded-3xl bg-white/[0.03] border border-white/10 flex flex-col items-center gap-2 text-white/40">
+                          <Clock size={20} />
+                          <span className="text-[10px] font-bold uppercase tracking-widest">4 Часа</span>
+                       </div>
                     </div>
 
                     <motion.button 
-                      whileTap={{ scale: 0.98 }}
-                      onClick={handleCreate}
-                      disabled={isSending}
-                      className="w-full py-5 rounded-[24px] bg-primary text-white font-black text-xl flex items-center justify-center gap-3 shadow-2xl shadow-primary/40"
+                      whileTap={{ scale: 0.98 }} onClick={handleCreate} disabled={isSending}
+                      className="w-full py-5 rounded-[28px] bg-primary text-white font-black text-xl flex items-center justify-center gap-3 shadow-2xl shadow-primary/40"
                     >
-                      {isSending ? 'Публикация...' : <>Опубликовать <Send size={22} /></>}
+                      {isSending ? 'Sending...' : <>Publish <Send size={22} /></>}
                     </motion.button>
                   </motion.div>
                 )}
+
               </AnimatePresence>
             </div>
           </motion.div>
