@@ -4,6 +4,9 @@ import { Bell, Heart, UserPlus, Star } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import clsx from 'clsx';
 
+// === PREMIUM PHYSICS (SYNCED) ===
+const TRANSITION_EASE = [0.25, 0.1, 0.25, 1];
+
 const listContainerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -13,13 +16,13 @@ const listContainerVariants = {
 };
 
 const itemVariants = {
-  hidden: { y: 10, opacity: 0, filter: 'blur(5px)', scale: 0.98 },
+  hidden: { y: 15, opacity: 0, filter: 'blur(8px)', scale: 0.96 },
   visible: { 
     y: 0, 
     opacity: 1, 
     filter: 'blur(0px)',
     scale: 1,
-    transition: { duration: 0.5, ease: [0.25, 0.4, 0.25, 1] } 
+    transition: { duration: 0.4, ease: TRANSITION_EASE } 
   }
 };
 
@@ -45,14 +48,14 @@ export default function NotificationsPage() {
 
   return (
     <div className="relative w-full h-full bg-black flex flex-col">
-      {/* HEADER (SAFE AREA FIX) */}
+      {/* HEADER */}
       <div className="absolute top-12 left-0 right-0 h-[52px] z-20 flex items-center justify-center bg-black/80 backdrop-blur-md border-b border-white/5">
         <span className="text-[17px] font-bold text-white tracking-tight">Уведомления</span>
       </div>
 
       <div className="flex-1 overflow-y-auto no-scrollbar pt-28 pb-32 px-4">
         <motion.div 
-          className="space-y-2 transform-gpu"
+          className="space-y-2 will-change-transform"
           variants={listContainerVariants}
           initial="hidden"
           animate="visible"
@@ -62,7 +65,7 @@ export default function NotificationsPage() {
               key={notif.id}
               variants={itemVariants}
               className={clsx(
-                "w-full p-4 rounded-[20px] border flex gap-4 items-center active:scale-[0.98] transition-all",
+                "w-full p-4 rounded-[20px] border flex gap-4 items-center transition-colors",
                 notif.read ? "bg-white/5 border-white/5" : "bg-white/10 border-white/10"
               )}
             >

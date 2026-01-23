@@ -5,23 +5,27 @@ import { MessageCircle, Search, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 
-const listContainerVariants = {
+// PREMIUM ANIMATION (SYNCED)
+const TRANSITION_EASE = [0.25, 0.1, 0.25, 1];
+
+const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.05, delayChildren: 0.1 }
+    transition: { staggerChildren: 0.03, delayChildren: 0.05 }
   }
 };
 
-const itemVariants = {
-  hidden: { y: 10, opacity: 0, filter: 'blur(5px)', scale: 0.98 },
+const cardVariants = {
+  hidden: { y: 20, opacity: 0, filter: 'blur(10px)', scale: 0.96 },
   visible: { 
     y: 0, 
     opacity: 1, 
     filter: 'blur(0px)',
     scale: 1,
-    transition: { duration: 0.5, ease: [0.25, 0.4, 0.25, 1] } 
-  }
+    transition: { duration: 0.4, ease: TRANSITION_EASE } 
+  },
+  tap: { scale: 0.97, transition: { duration: 0.1 } }
 };
 
 export default function ChatPage() {
@@ -36,12 +40,7 @@ export default function ChatPage() {
       await new Promise(r => setTimeout(r, 300));
       const { data } = await supabase
         .from('matches')
-        .select(`
-          id, status,
-          initiator:initiator_id(first_name, avatar_url),
-          requester:requester_id(first_name, avatar_url),
-          impulse:impulse_id(message)
-        `)
+        .select(`id, status, initiator:initiator_id(first_name, avatar_url), requester:requester_id(first_name, avatar_url), impulse:impulse_id(message)`)
         .or(`initiator_id.eq.${user.id},requester_id.eq.${user.id}`)
         .eq('status', 'accepted')
         .order('created_at', { ascending: false });
@@ -53,41 +52,25 @@ export default function ChatPage() {
   }, [user]);
 
   if (loading) {
-    return (
-      <div className="w-full h-full bg-black flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    return <div className="w-full h-full bg-black flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
   }
 
   return (
     <div className="relative w-full h-full bg-black flex flex-col">
-      {/* === HEADER (FIXED SAFE AREA) === */}
-      {/* Сместили вниз на top-12 (безопасная зона) */}
       <div className="absolute top-12 left-0 right-0 h-[52px] z-20 flex items-center justify-center bg-black/80 backdrop-blur-md border-b border-white/5">
         <span className="text-[17px] font-bold text-white tracking-tight">Чаты</span>
-        <button className="absolute right-4 p-2 text-white/50 hover:text-white transition-colors">
-          <Search size={20} />
-        </button>
+        <button className="absolute right-4 p-2 text-white/50 hover:text-white transition-colors"><Search size={20} /></button>
       </div>
 
-      {/* Контент: отступ pt-28 (top-12 + высота хедера) */}
       <div className="flex-1 overflow-y-auto no-scrollbar pt-28 pb-32 px-4">
         {chats.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-center">
-            <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-4 text-white/20">
-              <MessageCircle size={32} />
-            </div>
+            <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-4 text-white/20"><MessageCircle size={32} /></div>
             <p className="text-white/40 font-medium">Пока нет активных чатов</p>
             <p className="text-white/20 text-sm mt-2">Откликайся на импульсы на карте!</p>
           </div>
         ) : (
-          <motion.div 
-            className="space-y-2 transform-gpu"
-            variants={listContainerVariants}
-            initial="hidden"
-            animate="visible"
-          >
+          <motion.div className="space-y-2 will-change-transform" variants={containerVariants} initial="hidden" animate="visible">
             {chats.map((chat) => {
               const partner = chat.initiator_id === user.id ? chat.requester : chat.initiator;
               if (!partner) return null;
@@ -95,9 +78,10 @@ export default function ChatPage() {
               return (
                 <motion.button
                   key={chat.id}
-                  variants={itemVariants}
+                  variants={cardVariants}
+                  whileTap="tap"
                   onClick={() => navigate(`/chat/${chat.id}`)}
-                  className="w-full p-3 rounded-[20px] bg-white/5 border border-white/5 flex items-center gap-3 active:scale-[0.98] transition-all"
+                  className="w-full p-3 rounded-[20px] bg-white/5 border border-white/5 flex items-center gap-3"
                 >
                   <div className="relative">
                     <img src={partner.avatar_url || 'https://i.pravatar.cc/150'} className="w-12 h-12 rounded-full object-cover border border-white/10" alt=""/>

@@ -80,3 +80,9 @@ body, html, #root {
   -webkit-tap-highlight-color: transparent;
   font-family: var(--font-sans);
 }
+
+@supports (height: 100dvh) {
+  body, html, #root {
+    height: 100dvh;
+  }
+}

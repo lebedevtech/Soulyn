@@ -11,36 +11,38 @@ import {
 import { useLocation } from '../context/LocationContext';
 import clsx from 'clsx';
 
-// PREMIUM BLUR REVEAL ANIMATION
-const listContainerVariants = {
+// === PREMIUM ANIMATION CONSTANTS ===
+const TRANSITION_EASE = [0.25, 0.1, 0.25, 1]; // Apple-style easing
+
+const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.08,
+      staggerChildren: 0.03, // Очень быстрый каскад (snappy)
       delayChildren: 0.05
     }
-  },
-  exit: { opacity: 0, transition: { duration: 0.2 } }
+  }
 };
 
-const itemVariants = {
+const cardVariants = {
   hidden: { 
-    y: 10, 
+    y: 20, 
     opacity: 0, 
-    filter: 'blur(8px)', // Эффект размытия при появлении
-    scale: 0.98
+    filter: 'blur(10px)', // Сильный блюр на старте
+    scale: 0.96 
   },
   visible: { 
     y: 0, 
     opacity: 1, 
-    filter: 'blur(0px)', // Плавный фокус
+    filter: 'blur(0px)',
     scale: 1,
     transition: { 
-      duration: 0.5, 
-      ease: [0.25, 0.4, 0.25, 1], // Cubic Bezier (мягкое скольжение без рывков)
+      duration: 0.4, 
+      ease: TRANSITION_EASE 
     } 
-  }
+  },
+  tap: { scale: 0.97, transition: { duration: 0.1 } } // Мгновенный отклик
 };
 
 const CATEGORIES = [
@@ -64,8 +66,6 @@ const MapToggle = ({ mode, setMode }) => (
 export default function MapPage({ onOpenCreate }) {
   const [viewMode, setViewMode] = useState('map'); 
   const [mapLayer, setMapLayer] = useState('social');
-  
-  // Состояние активной категории (для анимации фона)
   const [activeCategory, setActiveCategory] = useState(null); 
   
   const [selectedImpulse, setSelectedImpulse] = useState(null);
@@ -133,14 +133,14 @@ export default function MapPage({ onOpenCreate }) {
         <MapView impulses={impulses} venues={venues} mode={mapLayer} userLocation={userLocation} followUser={followUser} onUserInteraction={() => setFollowUser(false)} onImpulseClick={setSelectedImpulse} onVenueClick={(venue) => setSelectedVenue(venue)} />
       </div>
 
-      {/* LIST VIEW */}
+      {/* LIST VIEW (PREMIUM) */}
       <AnimatePresence>
         {viewMode === 'list' && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.25 }}
             className="absolute inset-0 z-10 bg-black/60 backdrop-blur-xl"
           >
             <div className="absolute top-0 left-0 right-0 h-32 z-20 pointer-events-none bg-gradient-to-b from-black via-black/90 to-transparent" />
@@ -150,21 +150,22 @@ export default function MapPage({ onOpenCreate }) {
               {mapLayer === 'places' ? (
                 // === СПИСОК МЕСТ ===
                 <motion.div 
-                  className="space-y-4 transform-gpu"
-                  variants={listContainerVariants} 
+                  className="space-y-4 will-change-transform" // Оптимизация
+                  variants={containerVariants} 
                   initial="hidden" 
                   animate="visible"
                 >
-                   <motion.h3 variants={itemVariants} className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] mb-6 ml-1">Лучшие места</motion.h3>
+                   <motion.h3 variants={cardVariants} className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] mb-6 ml-1">Лучшие места</motion.h3>
                    
                    {venues.map(venue => (
                      <motion.button 
                        key={venue.id} 
-                       variants={itemVariants} 
+                       variants={cardVariants}
+                       whileTap="tap" // Мгновенный отклик
                        onClick={() => setSelectedVenue(venue)} 
-                       className="w-full glass-panel p-4 rounded-[24px] flex gap-4 active:scale-[0.98] transition-transform text-left"
+                       className="w-full glass-panel p-4 rounded-[24px] flex gap-4 text-left group"
                      >
-                       <img src={venue.image_url} className="w-20 h-20 rounded-xl object-cover shadow-lg" alt={venue.name} />
+                       <img src={venue.image_url} className="w-20 h-20 rounded-xl object-cover shadow-lg group-active:scale-[0.98] transition-transform duration-200" alt={venue.name} />
                        <div>
                          <h3 className="text-white font-bold text-lg leading-tight">{venue.name}</h3>
                          <p className="text-white/50 text-xs mt-1 line-clamp-2 leading-relaxed">{venue.description}</p>
@@ -176,30 +177,30 @@ export default function MapPage({ onOpenCreate }) {
               ) : (
                 // === СПИСОК ИМПУЛЬСОВ ===
                 <motion.div 
-                  className="space-y-4 transform-gpu"
-                  variants={listContainerVariants} 
+                  className="space-y-4 will-change-transform"
+                  variants={containerVariants} 
                   initial="hidden" 
                   animate="visible"
                 >
-                  {/* КАТЕГОРИИ (С PLAVNYM FONOM) */}
-                  <motion.div variants={itemVariants} className="mb-10">
+                  {/* КАТЕГОРИИ */}
+                  <motion.div variants={cardVariants} className="mb-10">
                     <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mb-5 ml-1">Категории</h3>
                     <div className="grid grid-cols-2 gap-3">
                       {CATEGORIES.map((cat) => {
                         const isActive = activeCategory === cat.id;
                         return (
-                          <button 
+                          <motion.button 
                             key={cat.id} 
+                            whileTap={{ scale: 0.98 }}
                             onClick={() => setActiveCategory(isActive ? null : cat.id)}
-                            className="relative p-5 rounded-[32px] flex flex-col items-start gap-4 active:scale-[0.97] transition-all overflow-hidden border border-white/5"
+                            className="relative p-5 rounded-[32px] flex flex-col items-start gap-4 transition-all overflow-hidden border border-white/5"
                           >
-                             {/* Скользящий фон (layoutId делает магию) */}
                              {isActive ? (
                                <motion.div 
                                  layoutId="activeCategoryBg"
                                  className="absolute inset-0 bg-white/10 z-0"
                                  initial={false}
-                                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                 transition={{ duration: 0.3, ease: "circOut" }}
                                />
                              ) : (
                                <div className="absolute inset-0 bg-black/20 z-0" />
@@ -214,26 +215,26 @@ export default function MapPage({ onOpenCreate }) {
                               </p>
                               <p className="text-[10px] text-white/30 font-black uppercase mt-1">Доступно</p>
                             </div>
-                          </button>
+                          </motion.button>
                         );
                       })}
                     </div>
                   </motion.div>
 
-                  {/* ИМПУЛЬСЫ */}
                   <div className="space-y-3">
-                    <motion.h3 variants={itemVariants} className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mb-6 ml-1">Актуально сейчас</motion.h3>
+                    <motion.h3 variants={cardVariants} className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mb-6 ml-1">Актуально сейчас</motion.h3>
                     
-                    {impulses.length === 0 && <motion.p variants={itemVariants} className="text-white/30 text-center py-4 text-sm">Пока нет активных импульсов...</motion.p>}
+                    {impulses.length === 0 && <motion.p variants={cardVariants} className="text-white/30 text-center py-4 text-sm">Пока нет активных импульсов...</motion.p>}
                     
                     {impulses.map((imp) => {
                       const user = imp.users || { first_name: 'Ghost' };
                       return (
                         <motion.button 
                           key={imp.id} 
-                          variants={itemVariants} 
+                          variants={cardVariants} 
+                          whileTap="tap"
                           onClick={() => setSelectedImpulse(imp)} 
-                          className={clsx("w-full glass-panel p-4 rounded-[30px] flex items-center gap-4 active:scale-[0.98] transition-all text-left", user.is_premium && "border-yellow-500/30 shadow-[0_0_15px_rgba(234,179,8,0.1)]")}
+                          className={clsx("w-full glass-panel p-4 rounded-[30px] flex items-center gap-4 text-left", user.is_premium && "border-yellow-500/30 shadow-[0_0_15px_rgba(234,179,8,0.1)]")}
                         >
                           <div className="w-14 h-14 rounded-full border-2 border-primary/20 p-0.5 shrink-0 relative">
                             <img src={user.avatar_url || 'https://i.pravatar.cc/150'} className="w-full h-full rounded-full object-cover" alt="" />

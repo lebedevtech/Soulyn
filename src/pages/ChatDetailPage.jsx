@@ -1,62 +1,103 @@
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send, Phone, MoreVertical } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ArrowLeft, Send, MoreVertical, Phone } from 'lucide-react';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
+import clsx from 'clsx';
+
+// PREMIUM MESSAGE ANIMATION
+const messageVariants = {
+  hidden: { y: 20, opacity: 0, scale: 0.95, filter: 'blur(5px)' },
+  visible: { 
+    y: 0, 
+    opacity: 1, 
+    scale: 1,
+    filter: 'blur(0px)',
+    transition: { type: "spring", stiffness: 400, damping: 30 } 
+  }
+};
 
 export default function ChatDetailPage() {
   const { id } = useParams();
+  const { user } = useAuth();
   const navigate = useNavigate();
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [partner, setPartner] = useState(null);
+
+  useEffect(() => {
+    // Mock partner & messages (В реальности здесь был бы fetch)
+    setPartner({ first_name: 'Анна', avatar_url: 'https://i.pravatar.cc/150?u=anna', is_online: true });
+    setMessages([
+      { id: 1, text: 'Привет! Видела твой импульс ⚡️', sender_id: 'partner', created_at: '12:30' },
+      { id: 2, text: 'Да, собираемся в Coffeemania. Ты как?', sender_id: user?.id, created_at: '12:31' },
+    ]);
+  }, [id, user]);
+
+  const handleSend = () => {
+    if (!newMessage.trim()) return;
+    setMessages([...messages, { id: Date.now(), text: newMessage, sender_id: user.id, created_at: 'Just now' }]);
+    setNewMessage('');
+  };
 
   return (
-    <div className="relative w-full h-full bg-black flex flex-col">
-      {/* HEADER (pt-24 - Самое важное тут) */}
-      <div className="pt-24 pb-4 px-4 bg-black/80 backdrop-blur-xl border-b border-white/5 flex items-center justify-between z-30 shrink-0">
-        <button 
-          onClick={() => navigate(-1)} 
-          className="p-2.5 rounded-full bg-white/5 text-white active:bg-white/10 transition-colors"
-        >
-          <ArrowLeft size={22} />
-        </button>
+    <div className="w-full h-full bg-black flex flex-col">
+      {/* Header */}
+      <div className="pt-14 pb-4 px-4 flex items-center justify-between bg-black/80 backdrop-blur-md border-b border-white/5 z-20">
+        <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-white"><ArrowLeft size={24} /></button>
         
         <div className="flex flex-col items-center">
-          <span className="font-bold text-white text-lg leading-none">Алексей</span>
-          <span className="text-[10px] text-green-500 font-bold uppercase tracking-widest mt-1">Online</span>
+          <span className="font-bold text-white text-[17px]">{partner?.first_name || '...'}</span>
+          <span className="text-[11px] text-green-500 font-medium">Online</span>
         </div>
-
-        <button className="p-2.5 rounded-full bg-white/5 text-white active:bg-white/10 transition-colors">
-          <Phone size={22} />
-        </button>
+        
+        <div className="flex gap-4">
+           <Phone size={20} className="text-white/50" />
+           <MoreVertical size={20} className="text-white/50" />
+        </div>
       </div>
 
-      {/* ОБЛАСТЬ СООБЩЕНИЙ */}
+      {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {/* Пример сообщения собеседника */}
-        <div className="flex items-end gap-3 max-w-[80%]">
-          <img src="https://i.pravatar.cc/150?u=1" className="w-8 h-8 rounded-full mb-1" />
-          <div className="p-4 rounded-2xl rounded-bl-none bg-[#1c1c1e] text-white/90 leading-snug">
-            Привет! Ты уже подошел?
-            <span className="block text-[10px] text-white/30 mt-1 text-right">18:40</span>
-          </div>
-        </div>
-
-        {/* Пример моего сообщения */}
-        <div className="flex items-end gap-3 max-w-[80%] ml-auto flex-row-reverse">
-          <div className="p-4 rounded-2xl rounded-br-none bg-primary text-white leading-snug">
-            Да, паркуюсь!
-            <span className="block text-[10px] text-white/40 mt-1 text-right">18:42</span>
-          </div>
-        </div>
+        {messages.map((msg) => {
+          const isMe = msg.sender_id === user?.id;
+          return (
+            <motion.div 
+              key={msg.id}
+              variants={messageVariants}
+              initial="hidden"
+              animate="visible"
+              className={clsx("flex", isMe ? "justify-end" : "justify-start")}
+            >
+              <div className={clsx(
+                "max-w-[75%] p-4 rounded-[20px] text-[15px] leading-relaxed relative",
+                isMe ? "bg-primary text-white rounded-tr-sm" : "bg-[#1C1C1E] text-white rounded-tl-sm"
+              )}>
+                {msg.text}
+                <span className={clsx("text-[10px] absolute bottom-1 right-3 opacity-50")}>{msg.created_at}</span>
+              </div>
+            </motion.div>
+          );
+        })}
       </div>
 
-      {/* ПОЛЕ ВВОДА (Нижнее меню тут скрыто, так что прижимаем к низу) */}
-      <div className="p-4 bg-black border-t border-white/10 shrink-0 mb-safe"> 
-        <div className="flex items-center gap-3 bg-[#1c1c1e] p-2 pr-2 rounded-[24px]">
+      {/* Input */}
+      <div className="p-4 bg-black border-t border-white/10">
+        <div className="flex gap-2 items-center bg-[#1C1C1E] rounded-full p-2 pl-4">
           <input 
-            type="text" 
-            placeholder="Сообщение..." 
-            className="flex-1 bg-transparent text-white px-3 py-2 focus:outline-none placeholder:text-white/20"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            placeholder="Сообщение..."
+            className="flex-1 bg-transparent text-white placeholder:text-white/30 focus:outline-none h-10"
           />
-          <button className="p-3 bg-primary rounded-full text-white shadow-lg active:scale-90 transition-transform">
-            <Send size={18} fill="currentColor" />
-          </button>
+          <motion.button 
+            whileTap={{ scale: 0.9 }}
+            onClick={handleSend}
+            className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white shrink-0"
+          >
+            <Send size={18} />
+          </motion.button>
         </div>
       </div>
     </div>
