@@ -12,7 +12,7 @@ export default function VenueSheet({ venue, onClose, onCreateImpulse }) {
         animate={{ opacity: 1 }} 
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="absolute inset-0 z-40 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 z-30 bg-black/60 backdrop-blur-sm"
       />
       
       <motion.div 
@@ -20,22 +20,21 @@ export default function VenueSheet({ venue, onClose, onCreateImpulse }) {
         animate={{ y: 0 }} 
         exit={{ y: "100%" }}
         transition={SHEET_TRANSITION}
-        className="absolute bottom-0 left-0 right-0 z-50 bg-[#121212] rounded-t-[32px] border-t border-white/10 overflow-hidden shadow-2xl"
+        className="absolute bottom-0 left-0 right-0 z-40 bg-[#121212] rounded-t-[32px] border-t border-white/10 shadow-2xl overflow-hidden"
       >
         {/* Drag Handle */}
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 w-12 h-1.5 bg-white/20 rounded-full shadow-lg" />
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 w-12 h-1.5 bg-white/20 rounded-full shadow-lg" />
 
-        {/* Image Header - Full Width & Height */}
+        {/* PHOTO HEADER - NO MARGINS */}
         <div className="relative h-72 w-full"> 
           <img src={venue.image_url} className="w-full h-full object-cover" alt="" />
-          {/* Градиент стал мощнее для читаемости */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#121212] via-[#121212]/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#121212] via-[#121212]/20 to-transparent" />
           
-          <button onClick={onClose} className="absolute top-6 right-6 p-2 bg-black/40 backdrop-blur-md rounded-full text-white/80 border border-white/10 z-20">
+          <button onClick={onClose} className="absolute top-6 right-6 p-2 bg-black/40 backdrop-blur-md rounded-full text-white/80 border border-white/10 z-30 active:scale-90 transition-transform">
             <X size={20} />
           </button>
           
-          <div className="absolute bottom-0 left-0 p-6 w-full z-10">
+          <div className="absolute bottom-0 left-0 p-6 w-full z-20">
             <div className="flex items-center gap-2 mb-2">
                {venue.is_partner && <span className="px-2 py-0.5 rounded bg-white/20 backdrop-blur-md border border-white/10 text-[10px] font-bold uppercase text-white tracking-wider flex items-center gap-1"><Star size={10} className="fill-white" /> Partner</span>}
                <span className="px-2 py-0.5 rounded bg-black/40 backdrop-blur-md border border-white/10 text-[10px] font-bold uppercase text-white/80 tracking-wider">{venue.average_check}</span>

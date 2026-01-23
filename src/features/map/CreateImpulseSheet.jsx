@@ -40,22 +40,22 @@ export default function CreateImpulseSheet({ isOpen, initialData, onClose }) {
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
           <motion.div 
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={onClose}
             className="absolute inset-0 z-40 bg-black/80 backdrop-blur-sm"
           />
           
-          {/* Card Style Sheet - Floats above bottom nav */}
+          {/* POP UP ANIMATION FROM BOTTOM */}
           <motion.div 
-            initial={{ y: "120%", scale: 0.95 }} 
-            animate={{ y: 0, scale: 1 }} 
-            exit={{ y: "120%", scale: 0.95 }}
+            initial={{ y: 50, opacity: 0, scale: 0.95 }} 
+            animate={{ y: 0, opacity: 1, scale: 1 }} 
+            exit={{ y: 50, opacity: 0, scale: 0.95 }}
             transition={SHEET_TRANSITION}
             className="absolute bottom-28 left-4 right-4 z-50 bg-[#1C1C1E] rounded-[32px] border border-white/10 p-6 shadow-2xl overflow-hidden"
+            style={{ transformOrigin: 'bottom center' }}
           >
-             {/* Декоративный элемент сверху */}
+             {/* Декоративная линия */}
              <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary/0 via-primary/50 to-primary/0" />
 
             <div className="flex justify-between items-start mb-6">

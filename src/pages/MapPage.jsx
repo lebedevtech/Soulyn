@@ -18,7 +18,7 @@ const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.04, delayChildren: 0.05 }
+    transition: { staggerChildren: 0.05, delayChildren: 0.05 }
   }
 };
 
@@ -122,6 +122,14 @@ export default function MapPage({ onOpenCreate }) {
         <MapView impulses={impulses} venues={venues} mode={mapLayer} userLocation={userLocation} followUser={followUser} onUserInteraction={() => setFollowUser(false)} onImpulseClick={setSelectedImpulse} onVenueClick={(venue) => setSelectedVenue(venue)} />
       </div>
 
+      {/* ГРАДИЕНТЫ (Z-50, чтобы накрывать низ шторок для эффекта глубины) */}
+      {viewMode === 'list' && (
+        <>
+          <div className="absolute top-0 left-0 right-0 h-32 z-50 pointer-events-none bg-gradient-to-b from-black via-black/90 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 h-48 z-50 pointer-events-none bg-gradient-to-t from-black via-black/95 to-transparent" />
+        </>
+      )}
+
       {/* LIST VIEW */}
       <AnimatePresence>
         {viewMode === 'list' && (
@@ -132,14 +140,9 @@ export default function MapPage({ onOpenCreate }) {
             transition={{ duration: 0.25 }}
             className="absolute inset-0 z-10 bg-black/60 backdrop-blur-xl"
           >
-            {/* ГРАДИЕНТЫ (Старые, аккуратные) */}
-            <div className="absolute top-0 left-0 right-0 h-32 z-20 pointer-events-none bg-gradient-to-b from-black via-black/90 to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 h-48 z-20 pointer-events-none bg-gradient-to-t from-black via-black/95 to-transparent" />
-
             <div className="w-full h-full overflow-y-auto no-scrollbar pt-32 pb-48 px-6 relative z-10">
               {mapLayer === 'places' ? (
                 // === СПИСОК МЕСТ ===
-                // Исправлено: добавлены initial и animate для списка
                 <motion.div 
                   key="places-list"
                   className="space-y-4 will-change-transform"
@@ -152,6 +155,10 @@ export default function MapPage({ onOpenCreate }) {
                    {venues.map(venue => (
                      <motion.button 
                        key={venue.id} 
+                       // Принудительная анимация для каждого элемента
+                       initial="hidden"
+                       whileInView="visible"
+                       viewport={{ once: true }}
                        variants={cardVariants}
                        whileTap="tap"
                        onClick={() => setSelectedVenue(venue)} 
@@ -197,14 +204,9 @@ export default function MapPage({ onOpenCreate }) {
                              ) : (
                                <div className="absolute inset-0 bg-black/20 z-0" />
                              )}
-
-                            <div className={clsx("relative z-10 p-3 rounded-2xl bg-white/5", isActive ? "text-white" : cat.color)}>
-                              <cat.icon size={22} />
-                            </div>
+                            <div className={clsx("relative z-10 p-3 rounded-2xl bg-white/5", isActive ? "text-white" : cat.color)}><cat.icon size={22} /></div>
                             <div className="relative z-10">
-                              <p className={clsx("font-bold text-[17px] leading-none transition-colors", isActive ? "text-white" : "text-white/60")}>
-                                {cat.label}
-                              </p>
+                              <p className={clsx("font-bold text-[17px] leading-none transition-colors", isActive ? "text-white" : "text-white/60")}>{cat.label}</p>
                               <p className="text-[10px] text-white/30 font-black uppercase mt-1">Доступно</p>
                             </div>
                           </motion.button>
@@ -215,9 +217,7 @@ export default function MapPage({ onOpenCreate }) {
 
                   <div className="space-y-3">
                     <motion.h3 variants={cardVariants} className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mb-6 ml-1">Актуально сейчас</motion.h3>
-                    
                     {impulses.length === 0 && <motion.p variants={cardVariants} className="text-white/30 text-center py-4 text-sm">Пока нет активных импульсов...</motion.p>}
-                    
                     {impulses.map((imp) => {
                       const user = imp.users || { first_name: 'Ghost' };
                       return (
@@ -251,6 +251,7 @@ export default function MapPage({ onOpenCreate }) {
         )}
       </AnimatePresence>
 
+      {/* MODALS - Z-40 (Under the gradients z-50) */}
       <AnimatePresence>
         {selectedImpulse && <ImpulseSheet key="impulse-sheet" impulse={selectedImpulse} onClose={() => setSelectedImpulse(null)} />}
       </AnimatePresence>
