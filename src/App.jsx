@@ -14,7 +14,7 @@ import OnboardingPage from './pages/OnboardingPage';
 
 import BottomNav from './components/layout/BottomNav';
 import CreateImpulseSheet from './features/map/CreateImpulseSheet';
-import MobileFrame from './components/layout/MobileFrame'; // Вернули импорт рамки
+import MobileFrame from './components/layout/MobileFrame'; // Импорт есть, теперь будем использовать
 
 export default function App() {
   const location = useLocation();
@@ -69,12 +69,13 @@ export default function App() {
     <AuthProvider>
       <LocationProvider>
         {isInTelegram ? (
-          // Версия для Telegram (на весь экран)
+          // ВЕРСИЯ ДЛЯ TELEGRAM (На весь экран)
           <div className="fixed inset-0 w-full h-full bg-black overflow-hidden">
             {content}
           </div>
         ) : (
-          // Версия для браузера (в рамке телефона)
+          // ВЕРСИЯ ДЛЯ БРАУЗЕРА (В рамке телефона)
+          // Исправлено: теперь используем компонент MobileFrame
           <MobileFrame>
             {content}
           </MobileFrame>
