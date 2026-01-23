@@ -7,25 +7,27 @@ const SHEET_TRANSITION = { duration: 0.4, ease: [0.25, 1, 0.5, 1] };
 export default function VenueSheet({ venue, onClose, onCreateImpulse }) {
   return (
     <>
+      {/* Backdrop z-60 */}
       <motion.div 
         initial={{ opacity: 0 }} 
         animate={{ opacity: 1 }} 
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="absolute inset-0 z-30 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 z-[60] bg-black/60 backdrop-blur-sm"
       />
       
+      {/* Sheet z-70 */}
       <motion.div 
         initial={{ y: "100%" }} 
         animate={{ y: 0 }} 
         exit={{ y: "100%" }}
         transition={SHEET_TRANSITION}
-        className="absolute bottom-0 left-0 right-0 z-40 bg-[#121212] rounded-t-[32px] border-t border-white/10 shadow-2xl overflow-hidden"
+        className="absolute bottom-0 left-0 right-0 z-[70] bg-[#121212] rounded-t-[32px] border-t border-white/10 shadow-2xl overflow-hidden"
       >
         {/* Drag Handle */}
         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 w-12 h-1.5 bg-white/20 rounded-full shadow-lg" />
 
-        {/* PHOTO HEADER - NO MARGINS */}
+        {/* Image Header */}
         <div className="relative h-72 w-full"> 
           <img src={venue.image_url} className="w-full h-full object-cover" alt="" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#121212] via-[#121212]/20 to-transparent" />

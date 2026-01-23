@@ -6,7 +6,6 @@ import { useAuth } from '../../context/AuthContext';
 import { useLocation } from '../../context/LocationContext';
 import clsx from 'clsx';
 
-// ТОЧНАЯ КОПИЯ ФИЗИКИ VENUE SHEET
 const SHEET_TRANSITION = { duration: 0.4, ease: [0.25, 1, 0.5, 1] };
 
 export default function CreateImpulseSheet({ isOpen, initialData, onClose }) {
@@ -41,22 +40,20 @@ export default function CreateImpulseSheet({ isOpen, initialData, onClose }) {
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* BACKDROP: FIXED (на весь экран, поверх меню) */}
+          {/* Backdrop: z-100 чтобы точно перекрыть BottomNav (у которого z-50) */}
           <motion.div 
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 1 }} 
-            exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 z-[100] bg-black/80 backdrop-blur-sm"
           />
           
-          {/* SHEET: FIXED BOTTOM (выезжает поверх меню) */}
+          {/* Sheet: z-110, выезжает от самого низа (bottom-0) */}
           <motion.div 
             initial={{ y: "100%" }} 
             animate={{ y: 0 }} 
             exit={{ y: "100%" }}
             transition={SHEET_TRANSITION}
-            className="fixed bottom-0 left-0 right-0 z-[70] bg-[#121212] rounded-t-[32px] border-t border-white/10 p-6 pb-12 shadow-2xl"
+            className="absolute bottom-0 left-0 right-0 z-[110] bg-[#121212] rounded-t-[32px] border-t border-white/10 p-6 pb-12 shadow-2xl"
           >
              {/* Drag Handle */}
              <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-6" />

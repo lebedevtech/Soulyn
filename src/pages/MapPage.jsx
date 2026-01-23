@@ -11,7 +11,6 @@ import {
 import { useLocation } from '../context/LocationContext';
 import clsx from 'clsx';
 
-// PREMIUM ANIMATION CONSTANTS
 const TRANSITION_EASE = [0.25, 0.1, 0.25, 1];
 
 const containerVariants = {
@@ -26,8 +25,8 @@ const cardVariants = {
   hidden: { 
     y: 20, 
     opacity: 0, 
-    // УБРАЛИ filter: 'blur(...)', чтобы не конфликтовал с glass-эффектом
     scale: 0.96 
+    // УБРАЛИ BLUR (фикс мерцания)
   },
   visible: { 
     y: 0, 
@@ -99,8 +98,7 @@ export default function MapPage({ onOpenCreate }) {
   return (
     <div className="relative w-full h-full bg-black overflow-hidden">
       
-      {/* HEADER */}
-      {/* Z-INDEX ИСПРАВЛЕН: z-[60] (выше любых градиентов) */}
+      {/* HEADER (Z-60: Поверх градиентов) */}
       <div className="absolute top-14 left-1/2 -translate-x-1/2 z-[60] flex flex-col items-center pointer-events-none">
         <h1 className="text-xl font-black text-white tracking-tighter drop-shadow-2xl leading-none">Soulyn</h1>
         <div className="flex items-center gap-1.5 mt-1">
@@ -137,18 +135,19 @@ export default function MapPage({ onOpenCreate }) {
             transition={{ duration: 0.25 }}
             className="absolute inset-0 z-10 bg-black/60 backdrop-blur-xl"
           >
-            {/* ГРАДИЕНТЫ (Внутри контейнера, чтобы уходили вместе с ним) */}
-            <div className="absolute top-0 left-0 right-0 h-32 z-20 pointer-events-none bg-gradient-to-b from-black via-black/90 to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 h-48 z-20 pointer-events-none bg-gradient-to-t from-black via-black/95 to-transparent" />
+            {/* ГРАДИЕНТЫ (Z-50) */}
+            <div className="absolute top-0 left-0 right-0 h-32 z-50 pointer-events-none bg-gradient-to-b from-black via-black/90 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 h-48 z-50 pointer-events-none bg-gradient-to-t from-black via-black/95 to-transparent" />
 
             <div className="w-full h-full overflow-y-auto no-scrollbar pt-32 pb-48 px-6 relative z-10">
               {mapLayer === 'places' ? (
                 // === СПИСОК МЕСТ ===
                 <motion.div 
+                  key="places-list"
                   className="space-y-4 will-change-transform"
                   variants={containerVariants} 
                   initial="hidden" 
-                  animate="visible"
+                  animate="visible" // Простая анимация без viewport (стабильнее)
                 >
                    <motion.h3 variants={cardVariants} className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] mb-6 ml-1">Лучшие места</motion.h3>
                    
@@ -172,6 +171,7 @@ export default function MapPage({ onOpenCreate }) {
               ) : (
                 // === СПИСОК ИМПУЛЬСОВ ===
                 <motion.div 
+                  key="impulses-list"
                   className="space-y-4 will-change-transform"
                   variants={containerVariants} 
                   initial="hidden" 
@@ -246,8 +246,13 @@ export default function MapPage({ onOpenCreate }) {
         )}
       </AnimatePresence>
 
-      <ImpulseSheet impulse={selectedImpulse} onClose={() => setSelectedImpulse(null)} />
-      <VenueSheet venue={selectedVenue} onClose={() => setSelectedVenue(null)} onCreateImpulse={(venue) => { setSelectedVenue(null); onOpenCreate({ venue, location: userLocation }); }} />
+      <AnimatePresence>
+        {selectedImpulse && <ImpulseSheet key="impulse-sheet" impulse={selectedImpulse} onClose={() => setSelectedImpulse(null)} />}
+      </AnimatePresence>
+      
+      <AnimatePresence>
+        {selectedVenue && <VenueSheet key="venue-sheet" venue={selectedVenue} onClose={() => setSelectedVenue(null)} onCreateImpulse={(venue) => { setSelectedVenue(null); onOpenCreate({ venue, location: userLocation }); }} />}
+      </AnimatePresence>
     </div>
   );
 }
