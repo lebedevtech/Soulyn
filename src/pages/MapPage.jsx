@@ -6,38 +6,35 @@ import ImpulseSheet from '../features/map/ImpulseSheet';
 import { 
   LayoutGrid, 
   Map as MapIcon, 
-  Coffee, 
-  Pizza, 
-  Film, 
-  Star, 
-  MapPin, 
-  ChevronRight,
   Users,
-  Building2
+  Building2,
+  Star,
+  MapPin,
+  ChevronRight
 } from 'lucide-react';
 import clsx from 'clsx';
 
-// ПЕРЕКЛЮЧАТЕЛЬ РЕЖИМОВ (Social / Places)
-// top-24 - расположили чуть ниже заголовка, но выше карты
+// КОМПОНЕНТ ПЕРЕКЛЮЧАТЕЛЯ
+// Сделали его более "стеклянным" и премиальным
 const MapToggle = ({ mode, setMode }) => (
-  <div className="absolute top-24 left-1/2 -translate-x-1/2 z-30 p-1 bg-black/60 backdrop-blur-xl rounded-full border border-white/10 flex shadow-2xl">
+  <div className="absolute top-28 left-6 z-30 flex items-center gap-1 p-1 bg-black/40 backdrop-blur-xl rounded-full border border-white/10 shadow-2xl">
     <button
       onClick={() => setMode('social')}
       className={clsx(
-        "px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
-        mode === 'social' ? "bg-white text-black shadow-lg" : "text-white/50 hover:text-white"
+        "px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
+        mode === 'social' ? "bg-white text-black shadow-lg" : "text-white/60 hover:text-white"
       )}
     >
-      <Users size={12} /> Social
+      <Users size={12} strokeWidth={3} /> Social
     </button>
     <button
       onClick={() => setMode('places')}
       className={clsx(
-        "px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
-        mode === 'places' ? "bg-white text-black shadow-lg" : "text-white/50 hover:text-white"
+        "px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
+        mode === 'places' ? "bg-white text-black shadow-lg" : "text-white/60 hover:text-white"
       )}
     >
-      <Building2 size={12} /> Places
+      <Building2 size={12} strokeWidth={3} /> Places
     </button>
   </div>
 );
@@ -51,22 +48,21 @@ export default function MapPage() {
   const [venues, setVenues] = useState([]);
 
   useEffect(() => {
-    const fetchImpulses = async () => {
-      const { data } = await supabase
+    // Загрузка данных (Импульсы + Заведения)
+    const fetchData = async () => {
+      const { data: impData } = await supabase
         .from('impulses')
         .select(`*, users (*), venues (name)`)
         .order('created_at', { ascending: false });
-      if (data) setImpulses(data);
+      if (impData) setImpulses(impData);
+
+      const { data: venueData } = await supabase.from('venues').select('*');
+      if (venueData) setVenues(venueData);
     };
 
-    const fetchVenues = async () => {
-      const { data } = await supabase.from('venues').select('*');
-      if (data) setVenues(data);
-    };
+    fetchData();
 
-    fetchImpulses();
-    fetchVenues();
-
+    // Realtime
     const channel = supabase
       .channel('public:impulses')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'impulses' }, async (payload) => {
@@ -85,23 +81,32 @@ export default function MapPage() {
   return (
     <div className="relative w-full h-full bg-black overflow-hidden">
       
-      {/* 1. ПЕРЕКЛЮЧАТЕЛЬ СЛОЕВ (Центр сверху) */}
+      {/* 1. ЛОГОТИП И ГОРОД (Сдвинули на top-14, чтобы уйти из под кнопки Закрыть) */}
+      <div className="absolute top-14 left-6 z-30 flex flex-col pointer-events-none">
+        <h1 className="text-3xl font-black text-white tracking-tighter drop-shadow-2xl leading-none">Soulyn</h1>
+        <div className="flex items-center gap-1.5 mt-2">
+          <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse shadow-[0_0_10px_rgba(139,92,246,1)]" />
+          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/50">Москва</span>
+        </div>
+      </div>
+
+      {/* 2. ПЕРЕКЛЮЧАТЕЛЬ (Сдвинули на top-28 и прижали ВЛЕВО, под логотип) */}
+      {/* Это создает единую вертикаль управления и освобождает центр карты */}
       <MapToggle mode={mapLayer} setMode={setMapLayer} />
 
-      {/* 2. КАРТА */}
+      {/* 3. КАРТА */}
       <div className="absolute inset-0 z-0">
         <MapView 
           impulses={impulses} 
           venues={venues} 
           mode={mapLayer} 
           onImpulseClick={setSelectedImpulse} 
-          onVenueClick={(venue) => alert(`Выбрано место: ${venue.name}`)} 
+          onVenueClick={(venue) => alert(venue.name)} 
         />
       </div>
 
-      {/* 3. КНОПКИ УПРАВЛЕНИЯ ВИДОМ (Плавающие справа снизу) */}
-      {/* Мы вынесли их из Header, чтобы разгрузить верх */}
-      <div className="absolute bottom-32 right-4 z-30 flex flex-col gap-3 pointer-events-auto">
+      {/* 4. КНОПКИ ВИДА (Справа снизу, над меню) */}
+      <div className="absolute bottom-28 right-4 z-30 flex flex-col gap-3 pointer-events-auto">
         <button 
           onClick={() => setViewMode('map')} 
           className={clsx(
@@ -126,28 +131,30 @@ export default function MapPage() {
         </button>
       </div>
 
-      {/* 4. РЕЖИМ СПИСКА (List View) */}
+      {/* 5. РЕЖИМ СПИСКА (List View) */}
       <AnimatePresence>
         {viewMode === 'list' && (
           <div className="absolute inset-0 z-10">
-            <div className="absolute top-0 left-0 right-0 h-48 z-20 pointer-events-none bg-gradient-to-b from-black via-black/80 to-transparent backdrop-blur-md" />
+            {/* Градиенты */}
+            <div className="absolute top-0 left-0 right-0 h-64 z-20 pointer-events-none bg-gradient-to-b from-black via-black/90 to-transparent" />
             <div className="absolute bottom-0 left-0 right-0 h-48 z-20 pointer-events-none bg-gradient-to-t from-black via-black/95 to-transparent" />
 
+            {/* Контент списка (Сдвинули начало на pt-48, чтобы список начинался ПОД переключателем) */}
             <motion.div 
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="w-full h-full bg-black/60 backdrop-blur-2xl overflow-y-auto no-scrollbar pt-44 pb-48 px-6 relative z-10"
+              className="w-full h-full bg-black/60 backdrop-blur-2xl overflow-y-auto no-scrollbar pt-48 pb-48 px-6 relative z-10"
             >
               {mapLayer === 'places' ? (
                 <section>
-                   <h3 className="text-[10px] font-black text-white/50 uppercase tracking-[0.3em] mb-6 ml-1">Лучшие места</h3>
+                   <h3 className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] mb-6 ml-1">Лучшие места</h3>
                    <div className="space-y-4">
                      {venues.map(venue => (
-                       <div key={venue.id} className="glass-panel p-4 rounded-[24px] flex gap-4">
-                         <img src={venue.image_url} className="w-20 h-20 rounded-xl object-cover" />
+                       <div key={venue.id} className="glass-panel p-4 rounded-[24px] flex gap-4 active:scale-[0.98] transition-transform">
+                         <img src={venue.image_url} className="w-20 h-20 rounded-xl object-cover shadow-lg" />
                          <div>
-                           <h3 className="text-white font-bold">{venue.name}</h3>
-                           <p className="text-white/50 text-xs mt-1 line-clamp-2">{venue.description}</p>
-                           <span className="inline-block mt-2 px-2 py-1 bg-white/10 rounded text-[10px] text-white font-bold uppercase">{venue.average_check}</span>
+                           <h3 className="text-white font-bold text-lg leading-tight">{venue.name}</h3>
+                           <p className="text-white/50 text-xs mt-1 line-clamp-2 leading-relaxed">{venue.description}</p>
+                           <span className="inline-block mt-2 px-2 py-1 bg-white/10 rounded text-[10px] text-white font-bold uppercase tracking-wider">{venue.average_check}</span>
                          </div>
                        </div>
                      ))}
@@ -189,18 +196,6 @@ export default function MapPage() {
           </div>
         )}
       </AnimatePresence>
-
-      {/* HEADER - Теперь здесь ТОЛЬКО логотип и город */}
-      <div className="absolute top-0 left-0 right-0 z-30 pt-16 px-6 flex items-center justify-between pointer-events-none">
-        <div className="flex flex-col">
-          <h1 className="text-3xl font-black text-white tracking-tighter drop-shadow-2xl leading-none">Soulyn</h1>
-          <div className="flex items-center gap-1.5 mt-2">
-            <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse shadow-[0_0_10px_rgba(139,92,246,1)]" />
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/50">Москва</span>
-          </div>
-        </div>
-        {/* Правая часть Header теперь пустая, чтобы не мешать кнопкам Телеграма */}
-      </div>
 
       <ImpulseSheet impulse={selectedImpulse} onClose={() => setSelectedImpulse(null)} />
     </div>
