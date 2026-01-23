@@ -50,7 +50,7 @@
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-  /* FIX: Стабилизация рендеринга стекла */
+  /* FIX: Стабилизация рендеринга стекла на мобильных */
   transform: translateZ(0); 
   backface-visibility: hidden;
 }
@@ -62,12 +62,9 @@
 }
 
 /* LEAFLET CUSTOMIZATION (FIXES) */
-/* 1. Черный фон при загрузке тайлов */
 .leaflet-container {
   background-color: #000000 !important;
 }
-
-/* 2. Скрываем копирайт */
 .leaflet-control-attribution {
   display: none !important;
 }

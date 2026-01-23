@@ -26,7 +26,6 @@ const cardVariants = {
   hidden: { 
     y: 20, 
     opacity: 0, 
-    // УБРАЛИ SCALE: 0.96 -> 1 (Это вызывало сбой backdrop-filter и серое мерцание)
     scale: 1 
   },
   visible: { 
@@ -99,7 +98,7 @@ export default function MapPage({ onOpenCreate }) {
   return (
     <div className="relative w-full h-full bg-black overflow-hidden">
       
-      {/* HEADER (Z-60) */}
+      {/* HEADER */}
       <div className="absolute top-14 left-1/2 -translate-x-1/2 z-[60] flex flex-col items-center pointer-events-none">
         <h1 className="text-xl font-black text-white tracking-tighter drop-shadow-2xl leading-none">Soulyn</h1>
         <div className="flex items-center gap-1.5 mt-1">
@@ -136,7 +135,7 @@ export default function MapPage({ onOpenCreate }) {
             transition={{ duration: 0.25 }}
             className="absolute inset-0 z-10 bg-black/60 backdrop-blur-xl"
           >
-            {/* ГРАДИЕНТЫ (Z-50) */}
+            {/* ГРАДИЕНТЫ */}
             <div className="absolute top-0 left-0 right-0 h-32 z-50 pointer-events-none bg-gradient-to-b from-black via-black/90 to-transparent" />
             <div className="absolute bottom-0 left-0 right-0 h-48 z-50 pointer-events-none bg-gradient-to-t from-black via-black/95 to-transparent" />
 
@@ -155,20 +154,26 @@ export default function MapPage({ onOpenCreate }) {
                    {venues.map(venue => (
                      <motion.button 
                        key={venue.id} 
-                       // FORCE ANIMATION (FIX STATIC CARDS)
+                       // === FIX: SEPARATED LAYERS ===
+                       className="relative w-full p-4 flex gap-4 text-left group" 
+                       variants={cardVariants}
                        initial="hidden"
                        whileInView="visible"
                        viewport={{ once: true }}
-                       variants={cardVariants}
                        whileTap="tap"
                        onClick={() => setSelectedVenue(venue)} 
-                       className="w-full glass-panel p-4 rounded-[24px] flex gap-4 text-left group"
                      >
-                       <img src={venue.image_url} className="w-20 h-20 rounded-xl object-cover shadow-lg group-active:scale-[0.98] transition-transform duration-200" alt={venue.name} />
-                       <div>
-                         <h3 className="text-white font-bold text-lg leading-tight">{venue.name}</h3>
-                         <p className="text-white/50 text-xs mt-1 line-clamp-2 leading-relaxed">{venue.description}</p>
-                         <span className="inline-block mt-2 px-2 py-1 bg-white/10 rounded text-[10px] text-white font-bold uppercase tracking-wider">{venue.average_check}</span>
+                       {/* 1. GLASS LAYER (Static background) */}
+                       <div className="absolute inset-0 glass-panel rounded-[24px]" />
+
+                       {/* 2. CONTENT LAYER (On top) */}
+                       <div className="relative z-10 flex gap-4 w-full items-center">
+                          <img src={venue.image_url} className="w-20 h-20 rounded-xl object-cover shadow-lg group-active:scale-[0.98] transition-transform duration-200 shrink-0" alt={venue.name} />
+                          <div className="min-w-0">
+                            <h3 className="text-white font-bold text-lg leading-tight">{venue.name}</h3>
+                            <p className="text-white/50 text-xs mt-1 line-clamp-2 leading-relaxed">{venue.description}</p>
+                            <span className="inline-block mt-2 px-2 py-1 bg-white/10 rounded text-[10px] text-white font-bold uppercase tracking-wider">{venue.average_check}</span>
+                          </div>
                        </div>
                      </motion.button>
                    ))}
@@ -223,22 +228,27 @@ export default function MapPage({ onOpenCreate }) {
                       return (
                         <motion.button 
                           key={imp.id} 
+                          // FIX: SEPARATE LAYERS FOR IMPULSES TOO
+                          className="relative w-full p-4 flex gap-4 items-center text-left group"
                           variants={cardVariants} 
                           whileTap="tap"
                           onClick={() => setSelectedImpulse(imp)} 
-                          className={clsx("w-full glass-panel p-4 rounded-[30px] flex items-center gap-4 text-left", user.is_premium && "border-yellow-500/30 shadow-[0_0_15px_rgba(234,179,8,0.1)]")}
                         >
-                          <div className="w-14 h-14 rounded-full border-2 border-primary/20 p-0.5 shrink-0 relative">
-                            <img src={user.avatar_url || 'https://i.pravatar.cc/150'} className="w-full h-full rounded-full object-cover" alt="" />
-                            {user.is_premium && <div className="absolute -top-1 -right-1 bg-black rounded-full p-1 border border-yellow-500"><Star size={10} className="text-yellow-400 fill-yellow-400" /></div>}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex justify-between items-center mb-1">
-                              <p className={clsx("font-bold text-base", user.is_premium ? "text-yellow-400" : "text-white")}>{user.first_name}</p>
-                              <span className="text-[10px] font-black text-primary uppercase">~500м</span>
+                          <div className={clsx("absolute inset-0 glass-panel rounded-[30px]", user.is_premium && "border-yellow-500/30 shadow-[0_0_15px_rgba(234,179,8,0.1)]")} />
+                          
+                          <div className="relative z-10 flex gap-4 w-full items-center">
+                            <div className="w-14 h-14 rounded-full border-2 border-primary/20 p-0.5 shrink-0 relative">
+                              <img src={user.avatar_url || 'https://i.pravatar.cc/150'} className="w-full h-full rounded-full object-cover" alt="" />
+                              {user.is_premium && <div className="absolute -top-1 -right-1 bg-black rounded-full p-1 border border-yellow-500"><Star size={10} className="text-yellow-400 fill-yellow-400" /></div>}
                             </div>
-                            <p className="text-white/60 text-sm line-clamp-1 font-medium">{imp.message}</p>
-                            {imp.venues && <div className="flex items-center gap-1 text-[10px] text-white/30 font-black uppercase mt-1"><MapPin size={10} className="text-primary" /> {imp.venues.name}</div>}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex justify-between items-center mb-1">
+                                <p className={clsx("font-bold text-base", user.is_premium ? "text-yellow-400" : "text-white")}>{user.first_name}</p>
+                                <span className="text-[10px] font-black text-primary uppercase">~500м</span>
+                              </div>
+                              <p className="text-white/60 text-sm line-clamp-1 font-medium">{imp.message}</p>
+                              {imp.venues && <div className="flex items-center gap-1 text-[10px] text-white/30 font-black uppercase mt-1"><MapPin size={10} className="text-primary" /> {imp.venues.name}</div>}
+                            </div>
                           </div>
                         </motion.button>
                       );
