@@ -141,7 +141,7 @@ export default function MapPage({ onOpenCreate }) {
 
             <div className="w-full h-full overflow-y-auto no-scrollbar pt-32 pb-48 px-6 relative z-10">
               {mapLayer === 'places' ? (
-                // === СПИСОК МЕСТ (STYLE FROM CATEGORIES: NO BLUR) ===
+                // === СПИСОК МЕСТ ===
                 <motion.div 
                   key="places-list"
                   className="space-y-4"
@@ -154,7 +154,6 @@ export default function MapPage({ onOpenCreate }) {
                    {venues.map(venue => (
                      <motion.button 
                        key={venue.id} 
-                       // STABLE STYLE: Border + Solid bg (like Categories)
                        className="relative w-full p-4 flex gap-4 text-left group rounded-[24px] border border-white/5 overflow-hidden" 
                        variants={cardVariants}
                        initial="hidden"
@@ -163,10 +162,7 @@ export default function MapPage({ onOpenCreate }) {
                        whileTap="tap"
                        onClick={() => setSelectedVenue(venue)} 
                      >
-                       {/* BACKGROUND: Pure solid/alpha color. NO BLUR. */}
                        <div className="absolute inset-0 bg-white/5 z-0" />
-
-                       {/* CONTENT */}
                        <div className="relative z-10 flex gap-4 w-full items-center">
                           <img src={venue.image_url} className="w-20 h-20 rounded-xl object-cover shadow-lg group-active:scale-[0.98] transition-transform duration-200 shrink-0" alt={venue.name} />
                           <div className="min-w-0">
@@ -179,7 +175,7 @@ export default function MapPage({ onOpenCreate }) {
                    ))}
                 </motion.div>
               ) : (
-                // === СПИСОК ИМПУЛЬСОВ (UPDATED TO MATCH) ===
+                // === СПИСОК ИМПУЛЬСОВ ===
                 <motion.div 
                   key="impulses-list"
                   className="space-y-4"
@@ -228,13 +224,14 @@ export default function MapPage({ onOpenCreate }) {
                       return (
                         <motion.button 
                           key={imp.id} 
-                          // STYLE FROM CATEGORIES: NO BLUR
                           className={clsx("relative w-full p-4 flex gap-4 items-center text-left group rounded-[30px] border border-white/5 overflow-hidden", user.is_premium && "border-yellow-500/30")}
                           variants={cardVariants} 
+                          initial="hidden"
+                          whileInView="visible"
+                          viewport={{ once: true }}
                           whileTap="tap"
                           onClick={() => setSelectedImpulse(imp)} 
                         >
-                           {/* BACKGROUND */}
                           <div className={clsx("absolute inset-0 z-0", user.is_premium ? "bg-yellow-500/5" : "bg-white/5")} />
                           
                           <div className="relative z-10 flex gap-4 w-full items-center">
