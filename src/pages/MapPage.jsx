@@ -76,9 +76,11 @@ export default function MapPage({ onOpenCreate }) {
       return () => navigator.geolocation.clearWatch(watchId);
     }
 
+    // REALTIME ПОДПИСКА (INSERT + DELETE)
     const channel = supabase
       .channel('public:impulses')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'impulses' }, async (payload) => {
+        // Когда кто-то создал импульс - подгружаем детали
         const { data } = await supabase
           .from('impulses')
           .select(`*, users (*), venues (name)`)
@@ -86,19 +88,21 @@ export default function MapPage({ onOpenCreate }) {
           .single();
         if (data) setImpulses((prev) => [data, ...prev]);
       })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'impulses' }, (payload) => {
+        // Когда импульс удален - убираем его из списка моментально
+        setImpulses((current) => current.filter(imp => imp.id !== payload.old.id));
+        // Если удаленный импульс был открыт - закрываем шторку
+        if (selectedImpulse?.id === payload.old.id) {
+          setSelectedImpulse(null);
+        }
+      })
       .subscribe();
 
     return () => supabase.removeChannel(channel);
-  }, []);
+  }, [selectedImpulse]); // Добавили зависимость, чтобы закрыть шторку
 
-  // ОБРАБОТЧИК КНОПКИ GPS: ГАРАНТИРУЕТ ВКЛЮЧЕНИЕ С ОДНОГО КЛИКА
   const handleGPSClick = () => {
-    // Сначала сбрасываем, чтобы реакт точно увидел изменение, если вдруг состояние "залипло"
-    // (Хотя обычно setFollowUser(true) достаточно, это перестраховка)
-    if (followUser) {
-      // Если уже следим - ничего не меняем или можно сделать re-center
-      // Но в нашем случае userLocation обновит flyTo
-    }
+    if (followUser) {}
     setFollowUser(true);
   };
 
@@ -138,10 +142,9 @@ export default function MapPage({ onOpenCreate }) {
       {/* 4. КНОПКИ СПРАВА */}
       <div className="absolute bottom-32 right-4 z-30 flex flex-col gap-3 pointer-events-auto">
         
-        {/* КНОПКА GPS */}
         {userLocation && (
           <button 
-            onClick={handleGPSClick} // Используем наш обработчик
+            onClick={handleGPSClick} 
             className={clsx(
               "w-12 h-12 rounded-2xl flex items-center justify-center backdrop-blur-xl border transition-all shadow-xl active:scale-90",
               followUser 
@@ -153,7 +156,6 @@ export default function MapPage({ onOpenCreate }) {
           </button>
         )}
 
-        {/* ПЕРЕКЛЮЧАТЕЛЬ ВИДА */}
         <button 
           onClick={() => setViewMode(viewMode === 'map' ? 'list' : 'map')} 
           className={clsx(
@@ -167,6 +169,7 @@ export default function MapPage({ onOpenCreate }) {
         </button>
       </div>
 
+      {/* 5. СПИСОК */}
       <AnimatePresence>
         {viewMode === 'list' && (
           <div className="absolute inset-0 z-10">
