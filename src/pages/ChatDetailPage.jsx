@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Send, MoreVertical, Phone } from 'lucide-react';
-import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import clsx from 'clsx';
 
@@ -25,9 +24,10 @@ export default function ChatDetailPage() {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [partner, setPartner] = useState(null);
+  const bottomRef = useRef(null);
 
   useEffect(() => {
-    // Mock data (Стабильная версия v0.2)
+    // Mock partner & messages (как в стабильной версии)
     setPartner({ first_name: 'Анна', avatar_url: 'https://i.pravatar.cc/150?u=anna', is_online: true });
     setMessages([
       { id: 1, text: 'Привет! Видела твой импульс ⚡️', sender_id: 'partner', created_at: '12:30' },
@@ -41,17 +41,23 @@ export default function ChatDetailPage() {
     setNewMessage('');
   };
 
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
   return (
-    <div className="w-full h-full bg-black flex flex-col">
-      {/* HEADER: Опускаем кнопки еще ниже (pt-24 вместо pt-14). 
-        Это гарантирует, что кнопки Назад/Звонок будут ниже кнопок Telegram.
-      */}
+    <div className="w-full h-full bg-black flex flex-col relative">
+      {/* HEADER: Кнопки опущены ниже (pt-24), текст партнера слегка приподнят (-translate-y-1). */}
       <div className="pt-24 pb-4 px-4 flex items-center justify-between bg-black/80 backdrop-blur-md border-b border-white/5 z-20 relative">
-        <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-white active:opacity-50 z-10"><ArrowLeft size={24} /></button>
+        <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-white active:opacity-50 z-10">
+          <ArrowLeft size={24} />
+        </button>
         
-        {/* Абсолютное центрирование имени */}
+        {/* Абсолютное центрирование имени с подъемом текста */}
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 translate-y-2 flex flex-col items-center pointer-events-none">
-          <span className="font-bold text-white text-[17px] leading-tight">{partner?.first_name || '...'}</span>
+          <span className="font-bold text-white text-[17px] leading-tight -translate-y-1">
+            {partner?.first_name || '...'}
+          </span>
           <span className="text-[11px] text-green-500 font-medium">Online</span>
         </div>
         
@@ -61,7 +67,7 @@ export default function ChatDetailPage() {
         </div>
       </div>
 
-      {/* Messages */}
+      {/* Messages: pt-4 для стандартного отступа от хедера */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((msg) => {
           const isMe = msg.sender_id === user?.id;
@@ -83,6 +89,7 @@ export default function ChatDetailPage() {
             </motion.div>
           );
         })}
+        <div ref={bottomRef} />
       </div>
 
       {/* Input */}

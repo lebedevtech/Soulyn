@@ -1,12 +1,9 @@
 import { motion } from 'framer-motion';
 import { 
-  Settings, LogOut, User, MapPin, 
-  Calendar, ChevronRight, Star, Shield, Bell
+  Settings, LogOut, User, ChevronRight, Star, Shield, Bell
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import clsx from 'clsx';
-
-const TRANSITION_EASE = [0.25, 0.1, 0.25, 1];
 
 export default function ProfilePage() {
   const { user, signOut } = useAuth();
@@ -14,12 +11,11 @@ export default function ProfilePage() {
   return (
     <div className="relative w-full h-full bg-black flex flex-col overflow-y-auto no-scrollbar">
       
-      {/* HEADER: Полная копия стилей из ChatPage и NotificationsPage */}
-      <div className="absolute top-14 left-0 right-0 h-[52px] z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md border-b border-white/5">
-        <span className="text-[17px] font-bold text-white tracking-tight">Профиль</span>
+      {/* HEADER: Уровень top-14 (56px) как на карте. Текст слегка приподнят. */}
+      <div className="absolute top-14 left-0 right-0 h-[52px] z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md border-b border-white/5 text-center">
+        <span className="text-[17px] font-bold text-white tracking-tight -translate-y-1">Профиль</span>
       </div>
 
-      {/* Убираем верхний градиент, оставляем только нижний как в Чатах */}
       <div className="absolute bottom-0 left-0 right-0 h-32 z-10 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none" />
 
       {/* CONTENT: pt-32 для выравнивания под хедером */}
