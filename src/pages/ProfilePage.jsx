@@ -1,157 +1,166 @@
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
   LogOut, User, ChevronRight, Star, Shield, QrCode, Crown, Sparkles,
-  Coffee, Pizza, Film, Zap, Moon, Share2, History, TrendingUp, Palette, 
-  Hexagon, Camera, MapPin, Users, Award, LayoutGrid, Cpu
+  Share2, History, TrendingUp, Palette, Hexagon, Camera, MapPin, 
+  LayoutGrid, Cpu, Heart, Hash
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTelegram } from '../context/TelegramContext';
 import clsx from 'clsx';
 
-const STATUS_PRESETS = [
-  { id: 'coffee', label: 'Кофе', icon: Coffee, color: 'text-orange-400' },
-  { id: 'food', label: 'Еда', icon: Pizza, color: 'text-red-400' },
-  { id: 'movie', label: 'Кино', icon: Film, color: 'text-purple-400' },
-  { id: 'vibe', label: 'Движ', icon: Zap, color: 'text-yellow-400' },
-];
-
 export default function ProfilePage() {
   const { user, signOut } = useAuth();
   const { haptic } = useTelegram();
-  const [showStatusPicker, setShowStatusPicker] = useState(false);
-  const [currentStatus, setCurrentStatus] = useState(null);
 
-  const memberSince = user?.created_at 
-    ? new Date(user.created_at).toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })
-    : 'Январь 2026';
+  // Имитация данных (в будущем потянутся из БД)
+  const userPhotos = [
+    user?.avatar_url || 'https://i.pravatar.cc/400?img=32',
+    'https://i.pravatar.cc/400?img=33',
+    'https://i.pravatar.cc/400?img=34'
+  ];
+
+  const interests = ['Lifestyle', 'Nightlife', 'Business', 'Techno', 'Art', 'Travel'];
 
   return (
     <div className="relative w-full h-full bg-black flex flex-col overflow-hidden">
       
-      {/* 1. FIXED HEADER: Теперь полностью прозрачный, без черной заливки */}
+      {/* 1. FIXED HEADER: Эталон Soulyn */}
       <div className="fixed top-14 left-0 right-0 h-[52px] z-[70] flex items-center justify-center text-center pointer-events-none">
         <span className="text-[17px] font-bold text-white tracking-tight -translate-y-3 pointer-events-auto">
           Профиль
         </span>
       </div>
 
-      {/* 2. GRADIENTS: Мягкие переходы сверху и снизу */}
-      {/* Top Gradient: создает плавное исчезновение текста при скролле под заголовок */}
-      <div className="fixed top-0 left-0 right-0 h-44 z-[65] bg-gradient-to-b from-black via-black/40 to-transparent pointer-events-none" />
-      
-      {/* Bottom Gradient: зафиксирован строго внизу экрана, под BottomNav */}
+      {/* 2. FIXED GRADIENTS */}
+      <div className="fixed top-0 left-0 right-0 h-40 z-[65] bg-gradient-to-b from-black via-black/40 to-transparent pointer-events-none" />
       <div className="fixed bottom-0 left-0 right-0 h-40 z-[45] bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none" />
 
       {/* 3. SCROLLABLE CONTENT */}
       <div className="flex-1 overflow-y-auto no-scrollbar pt-28 pb-44 px-6 relative z-10">
         
-        {/* HUMAN PROFILE SECTION */}
-        <div className="flex items-center gap-4 mb-8 mt-2">
-          <div className="relative shrink-0">
-            <div className="w-16 h-16 rounded-full border border-white/10 p-1 bg-white/5 shadow-2xl">
-              <img 
-                src={user?.avatar_url || 'https://i.pravatar.cc/150'} 
-                className="w-full h-full rounded-full object-cover" 
-                alt="Profile" 
-              />
-            </div>
-            <div className="absolute -bottom-0.5 -right-0.5 p-1 bg-primary rounded-full border-2 border-black">
-              <Star size={10} fill="currentColor" className="text-white" />
+        {/* PHOTO GALLERY (Tinder Style) */}
+        <div className="flex gap-3 overflow-x-auto no-scrollbar mb-8 -mx-1 px-1">
+          {userPhotos.map((photo, i) => (
+            <motion.div 
+              key={i}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: i * 0.1 }}
+              className="relative shrink-0 w-[260px] aspect-[3/4] rounded-[32px] overflow-hidden border border-white/5 shadow-2xl"
+            >
+              <img src={photo} className="w-full h-full object-cover" alt="User" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+              {i === 0 && (
+                <div className="absolute top-4 left-4 px-3 py-1 bg-primary/20 backdrop-blur-md border border-primary/30 rounded-full flex items-center gap-1.5">
+                  <Star size={10} className="text-primary fill-primary" />
+                  <span className="text-[9px] font-black text-white uppercase">Main</span>
+                </div>
+              )}
+            </motion.div>
+          ))}
+          <button className="shrink-0 w-20 aspect-[3/4] rounded-[32px] border-2 border-dashed border-white/5 flex flex-col items-center justify-center text-white/10 gap-2">
+            <Camera size={20} />
+            <span className="text-[8px] font-black uppercase">Add</span>
+          </button>
+        </div>
+
+        {/* BASIC INFO */}
+        <div className="mb-8 px-1">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-2xl font-black text-white tracking-tighter">
+              {user?.first_name || 'Resident'}, 26
+            </h3>
+            <div className="flex items-center gap-1 px-2 py-1 bg-white/5 rounded-lg border border-white/5">
+              <MapPin size={10} className="text-primary" />
+              <span className="text-[10px] font-bold text-white/40 uppercase">1.2 km</span>
             </div>
           </div>
           
-          <div className="flex-1 min-w-0">
-            <h3 className="text-xl font-black text-white tracking-tighter truncate">
-              {user?.first_name || 'Resident'}
-            </h3>
-            <button 
-              onClick={() => { haptic?.impact('light'); setShowStatusPicker(!showStatusPicker); }}
-              className="mt-1 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/10 active:bg-white/10 transition-all"
-            >
-              {currentStatus ? (
-                <>
-                  <currentStatus.icon size={10} className={currentStatus.color} />
-                  <span className="text-[10px] font-bold text-white/80">{currentStatus.label}</span>
-                </>
-              ) : (
-                <span className="text-[9px] font-black text-white/20 uppercase tracking-[0.1em]">Set Pulse</span>
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* STATS & CLUB TIER */}
-        <div className="mb-10">
-          <div className="grid grid-cols-3 gap-2 mb-4">
-            {[
-              { label: 'Импульсы', value: '12' },
-              { label: 'Мэтчи', value: '48' },
-              { label: 'Рейтинг', value: '4.9' },
-            ].map((stat, i) => (
-              <div key={i} className="bg-white/[0.03] border border-white/5 rounded-2xl py-3 text-center active:bg-white/5 transition-colors">
-                <p className="text-lg font-black text-white leading-none">{stat.value}</p>
-                <p className="text-[8px] text-white/20 font-black uppercase mt-1 tracking-tighter">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-          <div className="px-1">
-            <div className="flex justify-between items-center mb-1.5 font-black text-[8px] uppercase tracking-widest text-white/30">
-              <span>Club Progress</span>
-              <span className="text-primary tracking-normal">75% to Tier 2</span>
+          <div className="space-y-4">
+            {/* About Section */}
+            <div>
+              <p className="text-white/60 text-[14px] leading-relaxed font-medium">
+                Создаю продукты, люблю эстетику ночного города и правильный звук. 
+                В поиске интересных людей для совместных импульсов.
+              </p>
             </div>
-            <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
-              <motion.div initial={{ width: 0 }} animate={{ width: '75%' }} className="h-full bg-primary" />
+
+            {/* Interests Chips */}
+            <div className="flex flex-wrap gap-2 pt-2">
+              {interests.map(tag => (
+                <div key={tag} className="px-3 py-1.5 bg-white/[0.03] border border-white/5 rounded-full flex items-center gap-1.5">
+                  <Hash size={10} className="text-primary" />
+                  <span className="text-[10px] font-bold text-white/70 uppercase tracking-wider">{tag}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* ABSTRACT NFT ARTIFACT (Soulyn Passport) */}
+        {/* STATS GRID */}
+        <div className="grid grid-cols-3 gap-2 mb-10">
+          {[
+            { label: 'Импульсы', value: '12' },
+            { label: 'Мэтчи', value: '48' },
+            { label: 'Рейтинг', value: '4.9' },
+          ].map((stat, i) => (
+            <div key={i} className="bg-white/[0.03] border border-white/5 rounded-2xl py-3 text-center active:bg-white/5 transition-colors">
+              <p className="text-lg font-black text-white leading-none">{stat.value}</p>
+              <p className="text-[8px] text-white/20 font-black uppercase mt-1 tracking-tighter">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* SOULYN ARTIFACT (Clean NFT Card) */}
         <div className="mb-4 px-1 flex justify-between items-end">
-           <h3 className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em]">Identity Asset</h3>
-           <Award size={12} className="text-primary/40" />
+           <h3 className="text-[9px] font-black text-white/20 uppercase tracking-[0.3em]">Identity Asset</h3>
+           <Sparkles size={12} className="text-primary/40" />
         </div>
         
         <motion.div 
           whileTap={{ scale: 0.98 }}
           className="relative w-full aspect-[1.5/1] glass-panel rounded-[32px] p-6 overflow-hidden border border-white/10 shadow-2xl mb-12"
         >
-          {/* Генеративная абстракция фона */}
-          <div className="absolute inset-0 flex items-center justify-center opacity-30">
+          {/* NFT Core: Безликая абстракция */}
+          <div className="absolute inset-0 flex items-center justify-center opacity-40">
              <motion.div 
-               animate={{ scale: [1, 1.2, 1], rotate: 360 }}
-               transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-               className="w-48 h-48 bg-gradient-to-tr from-primary/60 to-transparent blur-[60px] rounded-full"
+               animate={{ 
+                 scale: [1, 1.15, 1],
+                 rotate: [0, 90, 180, 270, 360] 
+               }}
+               transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
+               className="w-56 h-56 bg-gradient-to-tr from-primary/50 via-blue-500/20 to-transparent blur-[80px] rounded-full"
              />
           </div>
 
           <div className="relative h-full flex flex-col justify-between z-10">
             <div className="flex justify-between items-start">
               <div className="flex flex-col gap-1">
-                <span className="text-[7px] font-black text-primary uppercase tracking-[0.4em]">Series Genesis</span>
-                <h2 className="text-sm font-black text-white/20 tracking-[0.5em] uppercase">Artifact</h2>
+                <span className="text-[7px] font-black text-primary uppercase tracking-[0.4em]">Genesis Series</span>
+                <h2 className="text-sm font-black text-white/10 tracking-[0.6em] uppercase">Artifact</h2>
               </div>
               <div className="flex gap-2">
-                <div className="p-2.5 rounded-2xl bg-black/40 border border-white/5 text-white/20"><QrCode size={14} /></div>
-                <div className="p-2.5 rounded-2xl bg-black/40 border border-white/5 text-primary"><Palette size={14} /></div>
+                <button className="p-2.5 rounded-2xl bg-black/40 border border-white/5 text-white/20"><QrCode size={14} /></button>
+                <button className="p-2.5 rounded-2xl bg-black/40 border border-white/5 text-primary"><Palette size={14} /></button>
               </div>
             </div>
 
-            {/* ABSTRACT VISUAL CORE */}
+            {/* Visual Code */}
             <div className="flex justify-center items-center">
-               <div className="relative w-12 h-12 flex items-center justify-center">
-                  <Cpu size={32} className="text-white/10 absolute animate-pulse" />
-                  <Hexagon size={44} className="text-primary/20 fill-white/5 rotate-90" />
+               <div className="relative">
+                  <Cpu size={36} className="text-white/10 animate-pulse" />
+                  <Hexagon size={48} className="absolute inset-0 -translate-x-1.5 -translate-y-1.5 text-primary/10 fill-white/5 rotate-90" />
                </div>
             </div>
 
-            <div className="flex justify-between items-end border-t border-white/5 pt-4">
+            {/* Bottom Info: No lines, just data */}
+            <div className="flex justify-between items-end">
               <div className="flex flex-col">
-                <span className="text-[7px] font-black text-white/10 uppercase tracking-[0.3em] mb-0.5">Asset Reference</span>
-                <span className="text-[9px] font-bold text-white/30 tracking-tight">SOUL-GEN-000{user?.id?.toString().slice(-3) || '482'}</span>
+                <span className="text-[7px] font-black text-white/10 uppercase tracking-[0.3em] mb-0.5">Verified Hash</span>
+                <span className="text-[9px] font-bold text-white/20 tracking-tight font-mono">SOUL-GEN-7F2A...</span>
               </div>
               <div className="flex flex-col items-end">
-                <span className="text-[7px] font-black text-primary uppercase tracking-[0.3em] mb-0.5">Global Rank</span>
+                <span className="text-[7px] font-black text-primary uppercase tracking-[0.3em] mb-0.5">Rank</span>
                 <span className="text-lg font-black text-white tracking-tighter leading-none">#42</span>
               </div>
             </div>
@@ -188,20 +197,6 @@ export default function ProfilePage() {
           </section>
         </div>
       </div>
-
-      {/* STATUS PICKER MODAL */}
-      <AnimatePresence>
-        {showStatusPicker && (
-          <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowStatusPicker(false)} className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm" />
-            <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 50, opacity: 0 }} className="fixed bottom-32 left-6 right-6 p-4 bg-[#121212] border border-white/10 rounded-[32px] z-[110] flex justify-between shadow-2xl">
-              {STATUS_PRESETS.map((s) => (
-                <button key={s.id} onClick={() => { setCurrentStatus(s); setShowStatusPicker(false); haptic?.impact('light'); }} className="p-4 rounded-2xl bg-white/5 active:bg-primary/20 transition-all"><s.icon size={20} className={s.color} /></button>
-              ))}
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
