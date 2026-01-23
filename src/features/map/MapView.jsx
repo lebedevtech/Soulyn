@@ -4,19 +4,22 @@ import 'leaflet/dist/leaflet.css';
 import { useEffect } from 'react';
 import clsx from 'clsx';
 
-// Умный контроллер камеры
+// Умный контроллер камеры (ОПТИМИЗИРОВАННЫЙ)
 function MapController({ center, userLocation, followUser }) {
   const map = useMap();
 
   useEffect(() => {
     if (followUser && userLocation) {
-      // Если включено слежение - плавно летим к юзеру
+      // ИСПРАВЛЕНИЕ: Делаем анимацию быстрой и резкой
+      // flyTo с duration 0.6 (было 1.5) создает ощущение мгновенного отклика
       map.flyTo(userLocation, 15, {
         animate: true,
-        duration: 1.5
+        duration: 0.6, // Меньше секунды -> ощущение скорости
+        easeLinearity: 0.5, // Меньше "тупняка" при старте анимации
+        noMoveStart: true // Не блокирует карту лишними событиями
       });
     }
-  }, [userLocation, followUser, map]); // Реагируем на изменение позиции или флага слежения
+  }, [userLocation, followUser, map]);
 
   return null;
 }
@@ -26,10 +29,10 @@ export default function MapView({
   venues = [], 
   mode = 'social', 
   userLocation, 
-  followUser, // Принимаем состояние слежения сверху
+  followUser, 
   onImpulseClick, 
   onVenueClick,
-  onUserInteraction // Новый коллбек: когда юзер двигает карту сам
+  onUserInteraction 
 }) {
   const defaultCenter = [55.7558, 37.6173];
 
@@ -99,7 +102,6 @@ export default function MapView({
         followUser={followUser}
       />
       
-      {/* События карты: если юзер начал двигать карту, отключаем слежение */}
       <TileLayer
         url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         attribution='&copy; CARTO'
