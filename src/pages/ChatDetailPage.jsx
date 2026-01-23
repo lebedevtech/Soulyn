@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { ArrowLeft, Send, MoreVertical, Phone } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeft, Send, MoreVertical, Phone, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import clsx from 'clsx';
@@ -24,23 +24,24 @@ export default function ChatDetailPage() {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [partner, setPartner] = useState(null);
+  const [showMenu, setShowMenu] = useState(false); // Меню действий
   const bottomRef = useRef(null);
 
-  // Функция пометки прочитанным
+  // Помечаем сообщения как прочитанные
   const markAsRead = async () => {
     if (!user || !id) return;
-    // Обновляем все сообщения в этом чате, которые не мои и не прочитаны
     await supabase.from('messages')
       .update({ is_read: true })
       .eq('match_id', id)
-      .neq('sender_id', user.id)
-      .eq('is_read', false);
+      .neq('sender_id', user.id) // Только чужие
+      .eq('is_read', false);     // Только непрочитанные
   };
 
   useEffect(() => {
     if (!user || !id) return;
 
     const fetchChatData = async () => {
+      // 1. Инфо о матче
       const { data: match } = await supabase
         .from('matches')
         .select(`initiator:initiator_id(id, first_name, avatar_url), requester:requester_id(id, first_name, avatar_url)`)
@@ -52,6 +53,7 @@ export default function ChatDetailPage() {
         setPartner(partnerData);
       }
 
+      // 2. История сообщений
       const { data: msgs } = await supabase
         .from('messages')
         .select('*')
@@ -60,12 +62,13 @@ export default function ChatDetailPage() {
 
       if (msgs) {
         setMessages(msgs);
-        markAsRead(); // Помечаем прочитанными при входе
+        markAsRead(); // Сразу помечаем прочитанными
       }
     };
 
     fetchChatData();
 
+    // 3. Подписка
     const channel = supabase.channel(`chat:${id}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `match_id=eq.${id}` }, (payload) => {
         setMessages((prev) => {
@@ -73,7 +76,7 @@ export default function ChatDetailPage() {
            return [...prev, payload.new];
         });
         
-        // Если пришло новое сообщение от партнера - помечаем прочитанным (так как мы в чате)
+        // Если пришло сообщение от партнера, пока мы в чате — сразу читаем
         if (payload.new.sender_id !== user.id) {
             markAsRead();
         }
@@ -105,7 +108,6 @@ export default function ChatDetailPage() {
 
     if (error) {
         console.error('Ошибка:', error);
-        alert(`Не удалось отправить: ${error.message}`);
         setMessages(prev => prev.filter(m => m.id !== tempId));
         setNewMessage(content); 
     } else if (data) {
@@ -113,21 +115,66 @@ export default function ChatDetailPage() {
     }
   };
 
+  // Удаление чата
+  const handleDeleteChat = async () => {
+    if (!window.confirm('Удалить этот чат? Это действие нельзя отменить.')) return;
+    
+    // Удаляем матч (каскадно должны удалиться сообщения, если настроено в БД, иначе удаляем вручную)
+    await supabase.from('messages').delete().eq('match_id', id);
+    await supabase.from('matches').delete().eq('id', id);
+    
+    navigate('/chats');
+  };
+
   return (
-    <div className="w-full h-full bg-black flex flex-col">
-      <div className="pt-14 pb-4 pl-4 pr-16 flex items-center justify-between bg-black/80 backdrop-blur-md border-b border-white/5 z-20">
-        <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-white active:opacity-50 transition-opacity"><ArrowLeft size={24} /></button>
-        <div className="flex flex-col items-center">
-          <span className="font-bold text-white text-[17px]">{partner?.first_name || '...'}</span>
-          <span className="text-[11px] text-green-500 font-medium">Online</span>
-        </div>
-        <div className="flex gap-4">
-           <Phone size={20} className="text-white/50" />
-           <MoreVertical size={20} className="text-white/50" />
+    <div className="w-full h-full bg-black flex flex-col relative">
+      {/* HEADER: SAFE AREA + CENTERING */}
+      <div className="absolute top-0 left-0 right-0 z-20 bg-black/80 backdrop-blur-md border-b border-white/5 pt-[calc(env(safe-area-inset-top)+12px)] pb-4 px-4">
+        <div className="relative flex items-center justify-between h-10">
+          
+          {/* Left: Back Button */}
+          <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-white active:opacity-50 transition-opacity z-10">
+            <ArrowLeft size={24} />
+          </button>
+          
+          {/* Center: Partner Info (Absolute centering) */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center pointer-events-none">
+            <span className="font-bold text-white text-[17px] leading-none">{partner?.first_name || '...'}</span>
+            <span className="text-[11px] text-green-500 font-medium mt-1 leading-none">Online</span>
+          </div>
+          
+          {/* Right: Actions */}
+          <div className="flex gap-2 z-10">
+             <button className="p-2 text-white/50 hover:text-white"><Phone size={20} /></button>
+             <button onClick={() => setShowMenu(!showMenu)} className="p-2 text-white/50 hover:text-white"><MoreVertical size={20} /></button>
+          </div>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      {/* DROPDOWN MENU */}
+      <AnimatePresence>
+        {showMenu && (
+          <>
+            <div className="fixed inset-0 z-30" onClick={() => setShowMenu(false)} />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: -10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: -10 }}
+              className="absolute top-[calc(env(safe-area-inset-top)+60px)] right-4 z-40 bg-[#1C1C1E] border border-white/10 rounded-xl shadow-2xl overflow-hidden min-w-[160px]"
+            >
+              <button 
+                onClick={handleDeleteChat}
+                className="w-full p-3 flex items-center gap-3 text-red-500 hover:bg-white/5 text-sm font-medium"
+              >
+                <Trash2 size={16} /> Удалить чат
+              </button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 pt-32"> {/* pt-32 compensates for header */}
         {messages.length === 0 && partner && <p className="text-center text-white/30 text-sm mt-10">Начните общение с {partner.first_name}...</p>}
         {messages.map((msg) => {
           const isMe = msg.sender_id === user?.id;
@@ -154,7 +201,8 @@ export default function ChatDetailPage() {
         <div ref={bottomRef} />
       </div>
 
-      <div className="p-4 bg-black border-t border-white/10 pb-8">
+      {/* Input */}
+      <div className="p-4 bg-black border-t border-white/10 pb-8 safe-area-bottom">
         <div className="flex gap-2 items-center bg-[#1C1C1E] rounded-full p-2 pl-4">
           <input 
             value={newMessage}
