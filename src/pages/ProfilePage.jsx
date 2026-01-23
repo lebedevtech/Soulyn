@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  LogOut, User, ChevronRight, Star, Shield, QrCode, Crown, Sparkles,
-  Share2, History, TrendingUp, Palette, Hexagon, Camera, MapPin, 
-  LayoutGrid, Cpu, Hash, RefreshCw, Terminal, AlertTriangle, Heart
+  LogOut, User, ChevronRight, Star, Shield, QrCode, Sparkles,
+  Share2, TrendingUp, Palette, Hexagon, Camera, MapPin, 
+  LayoutGrid, Cpu, Hash, Terminal, Award
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTelegram } from '../context/TelegramContext';
@@ -11,11 +11,18 @@ import { supabase } from '../lib/supabase';
 import clsx from 'clsx';
 
 export default function ProfilePage() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const { haptic } = useTelegram();
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  // Фотографии (для теста — заглушки, в будущем из БД)
+  // Локальная функция выхода (так как в AuthContext её может не быть)
+  const handleSignOut = async () => {
+    haptic?.impact('medium');
+    await supabase.auth.signOut();
+    window.location.reload();
+  };
+
+  // Фотографии (заглушки для визуала Tinder-style)
   const userPhotos = [
     user?.avatar_url || 'https://i.pravatar.cc/400?img=32',
     'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=400&auto=format&fit=crop',
@@ -37,21 +44,21 @@ export default function ProfilePage() {
   return (
     <div className="relative w-full h-full bg-black flex flex-col overflow-hidden">
       
-      {/* 1. FIXED HEADER: Эталонный стиль */}
+      {/* 1. FIXED HEADER */}
       <div className="fixed top-14 left-0 right-0 h-[52px] z-[70] flex items-center justify-center text-center pointer-events-none">
         <span className="text-[17px] font-bold text-white tracking-tight -translate-y-3 pointer-events-auto">
           {user?.email?.includes('test') ? 'Developer' : 'Профиль'}
         </span>
       </div>
 
-      {/* 2. FIXED GRADIENTS: Плавные переходы, не мешающие навигации */}
+      {/* 2. FIXED GRADIENTS */}
       <div className="fixed top-0 left-0 right-0 h-44 z-[65] bg-gradient-to-b from-black via-black/40 to-transparent pointer-events-none" />
       <div className="fixed bottom-0 left-0 right-0 h-40 z-[45] bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none" />
 
-      {/* 3. SCROLLABLE CONTENT: pt-28 для подъема */}
+      {/* 3. SCROLLABLE CONTENT */}
       <div className="flex-1 overflow-y-auto no-scrollbar pt-28 pb-48 px-6 relative z-10">
         
-        {/* PHOTO GALLERY: Tinder Style */}
+        {/* PHOTO GALLERY (Horizontal Scroll) */}
         <div className="flex gap-3 overflow-x-auto no-scrollbar mb-8 -mx-1 px-1">
           {userPhotos.map((photo, i) => (
             <motion.div 
@@ -76,7 +83,7 @@ export default function ProfilePage() {
           </button>
         </div>
 
-        {/* BASIC INFO: Extensive Profile */}
+        {/* BASIC INFO */}
         <div className="mb-8 px-1">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-2xl font-black text-white tracking-tighter">
@@ -90,7 +97,7 @@ export default function ProfilePage() {
           
           <div className="space-y-4">
             <p className="text-white/60 text-[14px] leading-relaxed font-medium">
-              Исследую городские смыслы и редкие заведения. Люблю минимализм в дизайне и сложный звук в музыке. Всегда открыт к спонтанным импульсам.
+              Исследую городские смыслы и редкие заведения. Люблю минимализм в дизайне и сложный звук в музыке.
             </p>
 
             <div className="flex flex-wrap gap-2 pt-1">
@@ -104,32 +111,21 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* STATS & PROGRESS: Геймификация */}
-        <div className="mb-10">
-          <div className="grid grid-cols-3 gap-2 mb-4">
-            {[
-              { label: 'Импульсы', value: '12' },
-              { label: 'Мэтчи', value: '48' },
-              { label: 'Рейтинг', value: '4.9' },
-            ].map((stat, i) => (
-              <div key={i} className="bg-white/[0.03] border border-white/5 rounded-2xl py-4 text-center">
-                <p className="text-xl font-black text-white leading-none">{stat.value}</p>
-                <p className="text-[8px] text-white/20 font-black uppercase mt-1.5 tracking-tighter">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-          <div className="px-1">
-            <div className="flex justify-between items-center mb-1.5 font-black text-[8px] uppercase tracking-widest text-white/30">
-              <span>Club Progress</span>
-              <span className="text-primary tracking-normal">Tier 1 • 75%</span>
+        {/* STATS */}
+        <div className="grid grid-cols-3 gap-2 mb-10">
+          {[
+            { label: 'Импульсы', value: '12' },
+            { label: 'Мэтчи', value: '48' },
+            { label: 'Рейтинг', value: '4.9' },
+          ].map((stat, i) => (
+            <div key={i} className="bg-white/[0.03] border border-white/5 rounded-2xl py-4 text-center">
+              <p className="text-xl font-black text-white leading-none">{stat.value}</p>
+              <p className="text-[8px] text-white/20 font-black uppercase mt-1 tracking-tighter">{stat.label}</p>
             </div>
-            <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
-              <motion.div initial={{ width: 0 }} animate={{ width: '75%' }} className="h-full bg-primary shadow-[0_0_10px_rgba(139,92,246,0.5)]" />
-            </div>
-          </div>
+          ))}
         </div>
 
-        {/* NFT ARTIFACT: Абстрактная карта без персональных данных */}
+        {/* NFT ARTIFACT CARD */}
         <div className="mb-4 px-1 flex justify-between items-end">
            <h3 className="text-[9px] font-black text-white/20 uppercase tracking-[0.3em]">Identity Asset</h3>
            <Award size={12} className="text-primary/40" />
@@ -139,7 +135,6 @@ export default function ProfilePage() {
           whileTap={{ scale: 0.98 }}
           className="relative w-full aspect-[1.5/1] glass-panel rounded-[32px] p-7 overflow-hidden border border-white/10 shadow-2xl mb-12"
         >
-          {/* Генеративное Ядро */}
           <div className="absolute inset-0 flex items-center justify-center opacity-40">
              <motion.div 
                animate={{ scale: [1, 1.15, 1], rotate: 360 }}
@@ -170,7 +165,7 @@ export default function ProfilePage() {
             <div className="flex justify-between items-end">
               <div className="flex flex-col">
                 <span className="text-[7px] font-black text-white/10 uppercase tracking-[0.3em] mb-0.5">Genetic Hash</span>
-                <span className="text-[9px] font-bold text-white/20 tracking-tight font-mono uppercase">SOUL-GEN-7F2A-{user?.id?.slice(0,4)}</span>
+                <span className="text-[9px] font-bold text-white/20 tracking-tight font-mono uppercase">SOUL-ID-{user?.id?.slice(0,8)}</span>
               </div>
               <div className="flex flex-col items-end">
                 <span className="text-[7px] font-black text-primary uppercase tracking-[0.3em] mb-0.5">Global Rank</span>
@@ -180,14 +175,14 @@ export default function ProfilePage() {
           </div>
         </motion.div>
 
-        {/* DEBUG AUTH SWITCHER: Пульт управления тестами */}
+        {/* DEBUG AUTH SWITCHER */}
         <section className="mb-10">
           <div className="flex items-center gap-2 mb-4 ml-1">
             <Terminal size={12} className="text-primary" />
             <h3 className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em]">Debug Auth Control</h3>
           </div>
           
-          <div className="bg-primary/5 border border-primary/10 rounded-[28px] p-4 space-y-3 shadow-[0_0_30px_rgba(139,92,246,0.1)]">
+          <div className="bg-primary/5 border border-primary/10 rounded-[28px] p-4">
             <div className="grid grid-cols-2 gap-2">
               <button 
                 onClick={() => handleQuickLogin('test1@example.com')}
@@ -196,7 +191,7 @@ export default function ProfilePage() {
                   user?.email === 'test1@example.com' ? "bg-primary border-primary text-white" : "bg-white/5 border-white/5 text-white/40 active:scale-95"
                 )}
               >
-                {isLoggingIn && user?.email !== 'test1@example.com' ? '...' : 'Account A'}
+                Account A
               </button>
               <button 
                 onClick={() => handleQuickLogin('test2@example.com')}
@@ -205,7 +200,7 @@ export default function ProfilePage() {
                   user?.email === 'test2@example.com' ? "bg-primary border-primary text-white" : "bg-white/5 border-white/5 text-white/40 active:scale-95"
                 )}
               >
-                {isLoggingIn && user?.email !== 'test2@example.com' ? '...' : 'Account B'}
+                Account B
               </button>
             </div>
           </div>
@@ -218,7 +213,7 @@ export default function ProfilePage() {
               { icon: Shield, label: 'Приватность', color: 'text-green-500' },
               { icon: TrendingUp, label: 'Ценность актива', color: 'text-blue-500' },
               { icon: LayoutGrid, label: 'Коллекция мест', color: 'text-orange-400' },
-              { icon: LogOut, label: 'Разорвать соединение', color: 'text-red-500', action: signOut },
+              { icon: LogOut, label: 'Выйти из аккаунта', color: 'text-red-500', action: handleSignOut },
             ].map((item, i, arr) => (
               <button 
                 key={i} 
