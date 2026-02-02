@@ -7,4 +7,10 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  server: {
+    // Разрешаем этот конкретный хост для ngrok
+    allowedHosts: [
+      'tawanda-coachable-charlena.ngrok-free.dev'
+    ]
+  }
 })
